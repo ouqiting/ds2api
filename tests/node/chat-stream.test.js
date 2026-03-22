@@ -44,7 +44,7 @@ test('resolveToolcallPolicy respects prepare flags and prepared tool names', () 
     [{ type: 'function', function: { name: 'fallback_tool', parameters: { type: 'object' } } }],
   );
   assert.deepEqual(policy.toolNames, ['prepped_tool']);
-  assert.equal(policy.toolSieveEnabled, false);
+  assert.equal(policy.toolSieveEnabled, true);
   assert.equal(policy.emitEarlyToolDeltas, false);
 });
 
