@@ -84,5 +84,5 @@ func latestUserInputForFile(messages []any) (int, string) {
 }
 
 func currentInputFilePrompt() string {
-	return "The current request and prior conversation context have already been provided. Answer the latest user request directly."
+	return promptcompat.BuildOpenAICurrentInputContextPrompt()
 }
