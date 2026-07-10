@@ -23,15 +23,6 @@
 
 【感谢Linux.do社区及GitHub社区各位开发者对项目的支持与贡献】
 
-## Star History
-
-<a href="https://www.star-history.com/?repos=cjackhwang%2Fds2api&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=cjackhwang/ds2api&type=date&theme=dark&legend=top-left" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=cjackhwang/ds2api&type=date&legend=top-left" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=cjackhwang/ds2api&type=date&legend=top-left" />
- </picture>
-</a>
 
 > **重要免责声明**
 >
@@ -306,7 +297,7 @@ base64 < config.json | tr -d '\n'
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/CJackHwang/ds2api.git
+git clone https://github.com/ouqiting/ds2api.git
 cd ds2api
 
 # 2. 配置
@@ -334,9 +325,9 @@ go run ./cmd/ds2api
 - `model_aliases`：OpenAI / Claude / Gemini 共用的模型 alias 映射。
 - `runtime`：账号并发、队列与 token 刷新策略，可通过 Admin Settings 热更新。
 - `auto_delete.mode`：请求结束后的远端会话清理策略，支持 `none` / `single` / `all`。
-- `current_input_file`：全局生效的上下文拆分上传策略；默认开启且阈值为 `0`，触发时将完整上下文合并上传为 `DS2API_HISTORY.txt` 上下文文件。
+- `current_input_file`：全局生效的上下文拆分上传策略；默认关闭，开启且阈值为 `0` 时，触发时将完整上下文合并上传为 `DS2API_HISTORY.txt` 上下文文件。
 - 如果关闭 `current_input_file`，请求会直接透传，不上传拆分上下文文件。
-- `thinking_injection`：默认开启；在最新 user 消息末尾追加思考增强提示词，提高高强度推理与工具调用前的思考稳定性；`prompt` 留空时使用内置默认提示词。
+- `thinking_injection`：默认关闭；开启后在最新 user 消息末尾追加思考增强提示词，提高高强度推理与工具调用前的思考稳定性；`prompt` 留空时使用内置默认提示词。
 
 环境变量完整列表见 [部署指南](docs/DEPLOY.md)，接口鉴权规则见 [API.md](API.md#鉴权规则)。
 
@@ -445,8 +436,8 @@ npm run build --prefix webui
 工作流文件：`.github/workflows/release-artifacts.yml`
 
 - **触发条件**：默认仅在 GitHub Release `published` 时自动触发；也支持在 Actions 页面手动 `workflow_dispatch`，并填写 `release_tag` 复跑/补发
-- **构建产物**：多平台二进制包（`linux/amd64`、`linux/arm64`、`linux/armv7`、`darwin/amd64`、`darwin/arm64`、`windows/amd64`、`windows/arm64`）、Linux Docker 镜像导出包 + `sha256sums.txt`
-- **容器镜像发布**：仅推送到 GHCR（`ghcr.io/cjackhwang/ds2api`）
+- **构建产物**：多平台二进制包（`linux/amd64`、`darwin/amd64`、`windows/amd64`）、Linux Docker 镜像导出包 + `sha256sums.txt`
+- **容器镜像发布**：仅推送到 GHCR（`ghcr.io/ouqiting/ds2api`）
 - **每个二进制压缩包包含**：`ds2api` 可执行文件、`static/admin`、`config.example.json`、`.env.example`、`README.MD`、`README.en.md`、`LICENSE`
 
 ## 免责声明

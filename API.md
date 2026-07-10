@@ -774,8 +774,8 @@ data: {"type":"message_stop"}
 - `runtime`（`account_max_inflight`、`account_max_queue`、`global_max_inflight`、`token_refresh_interval_hours`）
 - `responses` / `embeddings`
 - `auto_delete`（`mode`：`none` / `single` / `all`；旧配置 `sessions=true` 仍按 `all` 处理）
-- `current_input_file`（`enabled` 默认返回 `true`、`min_chars`）
-- `thinking_injection`（`enabled` 默认返回 `true`、`prompt`、`default_prompt`）
+- `current_input_file`（`enabled` 默认返回 `false`、`min_chars`）
+- `thinking_injection`（`enabled` 默认返回 `false`、`prompt`、`default_prompt`）
 - `model_aliases`
 - `env_backed`、`needs_vercel_sync`
 - `toolcall` 策略已固定为 `feature_match + high`，不再通过 settings 返回或修改

@@ -29,8 +29,8 @@ func TestStoreCurrentInputFileAccessors(t *testing.T) {
 
 func TestStoreThinkingInjectionAccessors(t *testing.T) {
 	store := &Store{cfg: Config{}}
-	if !store.ThinkingInjectionEnabled() {
-		t.Fatal("expected thinking injection enabled by default")
+	if store.ThinkingInjectionEnabled() {
+		t.Fatal("expected thinking injection disabled by default")
 	}
 
 	disabled := false

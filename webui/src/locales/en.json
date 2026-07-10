@@ -390,7 +390,7 @@
         "responsesTTL": "Responses store TTL (seconds)",
         "embeddingsProvider": "Embeddings provider",
         "thinkingInjectionEnabled": "Thinking format injection",
-        "thinkingInjectionDesc": "Append a structured <think> checklist to the latest user message before prompt assembly.",
+        "thinkingInjectionDesc": "Disabled by default. When enabled, append a structured <think> checklist to the latest user message before prompt assembly.",
         "thinkingInjectionPrompt": "Thinking format prompt",
         "thinkingInjectionPromptHelp": "Leave empty to use the built-in default prompt shown as the input placeholder.",
         "currentInputFileTitle": "Independent Split",
