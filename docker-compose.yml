@@ -10,6 +10,7 @@ services:
       - "${DS2API_HOST_PORT:-6011}:5001"
     volumes:
       - ./config.json:/data/config.json   # 配置文件（持久化推荐路径）
+      - ./data:/app/data                  # webui 调用记录等运行数据持久化
     environment:
       - TZ=Asia/Shanghai
       - LOG_LEVEL=INFO
