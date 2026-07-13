@@ -443,7 +443,7 @@ npm run build --prefix webui
 工作流文件：`.github/workflows/release-artifacts.yml`
 
 - **触发条件**：默认仅在 GitHub Release `published` 时自动触发；也支持在 Actions 页面手动 `workflow_dispatch`，并填写 `release_tag` 复跑/补发
-- **构建产物**：多平台二进制包（`linux/amd64`、`darwin/amd64`、`windows/amd64`）、Linux Docker 镜像导出包 + `sha256sums.txt`
+- **构建产物**：多平台二进制包（`linux/amd64`、`linux/arm64`、`darwin/amd64`、`windows/amd64`）、Linux Docker 镜像导出包 + `sha256sums.txt`
 - **容器镜像发布**：仅推送到 GHCR（`ghcr.io/ouqiting/ds2api`）
 - **每个二进制压缩包包含**：`ds2api` 可执行文件、`static/admin`、`config.example.json`、`.env.example`、`README.MD`、`README.en.md`、`LICENSE`
 
