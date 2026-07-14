@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"strings"
 	"testing"
+	"time"
 
 	"ds2api/internal/account"
 	"ds2api/internal/auth"
@@ -20,6 +21,7 @@ type fakeDeepSeekCaller struct {
 	uploads            []dsclient.UploadFileRequest
 	completionAccounts []string
 	sessionByAccount   bool
+	fireAndStopCounter int
 }
 
 type currentInputRuntimeConfig struct{}
@@ -57,6 +59,19 @@ func (f *fakeDeepSeekCaller) CallCompletion(_ context.Context, a *auth.RequestAu
 	resp := f.responses[0]
 	f.responses = f.responses[1:]
 	return resp, nil
+}
+
+func (f *fakeDeepSeekCaller) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (f *fakeDeepSeekCaller) FireCompletionAndStop(_ context.Context, a *auth.RequestAuth, payload map[string]any, _ string, _ time.Duration) (int, error) {
+	f.payloads = append(f.payloads, payload)
+	if a != nil {
+		f.completionAccounts = append(f.completionAccounts, a.AccountID)
+	}
+	f.fireAndStopCounter++
+	return 100 + f.fireAndStopCounter, nil
 }
 
 func TestExecuteNonStreamWithRetryBuildsCanonicalTurn(t *testing.T) {

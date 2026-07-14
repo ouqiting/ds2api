@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"ds2api/internal/auth"
 	"ds2api/internal/chathistory"
@@ -111,6 +112,14 @@ func (d *claudeCurrentInputDS) CallCompletion(_ context.Context, _ *auth.Request
 		Header:     make(http.Header),
 		Body:       io.NopCloser(strings.NewReader("data: {\"p\":\"response/content\",\"v\":\"ok\"}\n")),
 	}, nil
+}
+
+func (d *claudeCurrentInputDS) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (d *claudeCurrentInputDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+	return 0, nil
 }
 
 func TestClaudeDirectAppliesCurrentInputFile(t *testing.T) {
