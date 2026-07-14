@@ -19,6 +19,14 @@ func (h *Handler) getConfig(w http.ResponseWriter, _ *http.Request) {
 		"env_writeback_enabled": h.Store.IsEnvWritebackEnabled(),
 		"config_path":           h.Store.ConfigPath(),
 		"model_aliases":         snap.ModelAliases,
+		"elastic_pool": map[string]any{
+			"enabled":          snap.ElasticPool.Enabled,
+			"per_pool":         snap.ElasticPool.PerPool,
+			"global_count":     snap.ElasticPool.GlobalCount,
+			"default_count":    snap.ElasticPool.DefaultCount,
+			"no_tools_count":   snap.ElasticPool.NoToolsCount,
+			"tools_only_count": snap.ElasticPool.ToolsOnlyCount,
+		},
 		"vercel": map[string]any{
 			"has_token":     strings.TrimSpace(snap.Vercel.Token) != "",
 			"token_preview": maskSecretPreview(snap.Vercel.Token),

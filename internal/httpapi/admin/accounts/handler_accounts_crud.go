@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 
 	"github.com/go-chi/chi/v5"
@@ -26,6 +27,13 @@ func (h *Handler) listAccounts(w http.ResponseWriter, r *http.Request) {
 	}
 	accounts := h.Store.Snapshot().Accounts
 	reverseAccounts(accounts)
+	// 将已启用且未禁言的账号排在前面，方便管理后台优先看到可用账号。
+	sort.SliceStable(accounts, func(i, j int) bool {
+		ai, aj := accounts[i], accounts[j]
+		activeI := ai.IsEnabled() && !ai.IsMuted()
+		activeJ := aj.IsEnabled() && !aj.IsMuted()
+		return activeI && !activeJ
+	})
 	q := strings.TrimSpace(strings.ToLower(r.URL.Query().Get("q")))
 	if q != "" {
 		filtered := make([]config.Account, 0, len(accounts))

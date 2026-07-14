@@ -7,6 +7,7 @@ import AccountsTable from './AccountsTable'
 import AddKeyModal from './AddKeyModal'
 import AddAccountModal from './AddAccountModal'
 import EditAccountModal from './EditAccountModal'
+import ElasticPoolModal from './ElasticPoolModal'
 
 export default function AccountManagerContainer({ config, onRefresh, onMessage, authFetch }) {
     const { t } = useI18n()
@@ -70,6 +71,13 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
         updateAccountProxy,
         toggleAccountEnabled,
         toggleAllAccountsEnabled,
+        showElasticPool,
+        openElasticPool,
+        closeElasticPool,
+        elasticPool,
+        setElasticPool,
+        savingElasticPool,
+        saveElasticPool,
     } = useAccountActions({
         apiFetch,
         t,
@@ -135,6 +143,8 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 totalPages={totalPages}
                 resolveAccountIdentifier={resolveAccountIdentifier}
                 proxies={config?.proxies || []}
+                elasticPoolEnabled={Boolean(config?.elastic_pool?.enabled)}
+                onOpenElasticPool={openElasticPool}
                 onTestAll={testAllAccounts}
                 onShowAddAccount={openAddAccount}
                 onEditAccount={openEditAccount}
@@ -182,6 +192,16 @@ export default function AccountManagerContainer({ config, onRefresh, onMessage, 
                 loading={loading}
                 onClose={closeEditAccount}
                 onSave={updateAccount}
+            />
+
+            <ElasticPoolModal
+                show={showElasticPool}
+                t={t}
+                elasticPool={elasticPool}
+                setElasticPool={setElasticPool}
+                loading={savingElasticPool}
+                onClose={closeElasticPool}
+                onSave={saveElasticPool}
             />
         </div>
     )

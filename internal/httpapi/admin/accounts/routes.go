@@ -16,6 +16,7 @@ func RegisterRoutes(r chi.Router, h *Handler) {
 	r.Delete("/accounts/{identifier}", h.deleteAccount)
 	r.Put("/accounts/{identifier}/enabled", h.toggleAccountEnabled)
 	r.Post("/accounts/enabled/batch", h.batchToggleAccountEnabled)
+	r.Put("/accounts/elastic-pool", h.updateElasticPool)
 	r.Get("/queue/status", h.queueStatus)
 	r.Post("/accounts/test", h.testSingleAccount)
 	r.Post("/accounts/test-all", h.testAllAccounts)

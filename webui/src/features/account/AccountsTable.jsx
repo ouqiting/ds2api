@@ -20,6 +20,8 @@ export default function AccountsTable({
     totalPages,
     resolveAccountIdentifier,
     proxies,
+    elasticPoolEnabled,
+    onOpenElasticPool,
     onTestAll,
     onShowAddAccount,
     onEditAccount,
@@ -78,11 +80,21 @@ export default function AccountsTable({
             </div>
 
             <div className="px-6 py-3 border-b border-border flex items-center justify-between gap-2">
-                <div />
+                <button
+                    onClick={onOpenElasticPool}
+                    className={clsx(
+                        "flex items-center px-3 py-1.5 rounded-lg transition-colors text-xs font-medium border",
+                        elasticPoolEnabled
+                            ? "bg-amber-500/20 text-amber-600 border-amber-500/40 hover:bg-amber-500/30"
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/30 hover:bg-amber-500/20"
+                    )}
+                >
+                    {t('accountManager.elasticPool')}
+                </button>
                 <div className="flex flex-wrap gap-2">
                     <button
                         onClick={() => onToggleAllAccountsEnabled(false)}
-                        disabled={togglingAllEnabled || testingAll || totalAccounts === 0}
+                        disabled={elasticPoolEnabled || togglingAllEnabled || testingAll || totalAccounts === 0}
                         className="flex items-center px-3 py-1.5 bg-destructive/10 text-destructive border border-destructive/20 rounded-lg hover:bg-destructive/20 transition-colors text-xs font-medium disabled:opacity-50"
                     >
                         {togglingAllEnabled && <span className="animate-spin mr-2">⟳</span>}
@@ -90,7 +102,7 @@ export default function AccountsTable({
                     </button>
                     <button
                         onClick={() => onToggleAllAccountsEnabled(true)}
-                        disabled={togglingAllEnabled || testingAll || totalAccounts === 0}
+                        disabled={elasticPoolEnabled || togglingAllEnabled || testingAll || totalAccounts === 0}
                         className="flex items-center px-3 py-1.5 bg-secondary text-secondary-foreground rounded-lg hover:bg-secondary/80 transition-colors text-xs font-medium border border-border disabled:opacity-50"
                     >
                         {t('accountManager.enableAllAccounts')}
@@ -226,7 +238,7 @@ export default function AccountsTable({
                                         role="switch"
                                         aria-checked={!isDisabled}
                                         onClick={() => onToggleAccountEnabled(id, isDisabled)}
-                                        disabled={togglingEnabled?.[id]}
+                                        disabled={elasticPoolEnabled || togglingEnabled?.[id]}
                                         title={isDisabled ? t('accountManager.enableAccount') : t('accountManager.disableAccount')}
                                         className={clsx(
                                             "relative inline-flex h-5 w-9 items-center rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed shrink-0",

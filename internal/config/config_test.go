@@ -2,8 +2,10 @@ package config
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -460,5 +462,90 @@ func TestAccountTestStatusIsRuntimeOnlyAndNotPersisted(t *testing.T) {
 	}
 	if strings.Contains(string(content), "test_status") {
 		t.Fatalf("expected test_status to stay out of persisted config, got: %s", content)
+	}
+}
+
+func TestStoreUpdatePersistsElasticPoolToFile(t *testing.T) {
+	path := t.TempDir() + "/config.json"
+	t.Setenv("DS2API_CONFIG_JSON", "")
+	t.Setenv("DS2API_CONFIG_PATH", path)
+
+	store := LoadStore()
+	if err := store.Update(func(c *Config) error {
+		c.Accounts = []Account{{Email: "a@x.com", Password: "p"}}
+		c.ElasticPool = ElasticPoolConfig{Enabled: true, PerPool: false, GlobalCount: 3}
+		return nil
+	}); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+
+	snap := store.Snapshot()
+	t.Logf("snapshot ElasticPool: %+v", snap.ElasticPool)
+	clone := snap.Clone()
+	t.Logf("clone ElasticPool: %+v", clone.ElasticPool)
+	b, _ := json.MarshalIndent(clone, "", "  ")
+	t.Logf("clone JSON: %s", string(b))
+
+	// Direct serialization test
+	direct := Config{ElasticPool: ElasticPoolConfig{Enabled: true, GlobalCount: 3}}
+	db, _ := json.MarshalIndent(direct, "", "  ")
+	t.Logf("direct JSON: %s", string(db))
+
+	// Test nested struct only
+	nested := ElasticPoolConfig{Enabled: true, GlobalCount: 3}
+	t.Logf("reflect.IsZero of nested: %v", reflect.ValueOf(nested).IsZero())
+	nb, _ := json.MarshalIndent(nested, "", "  ")
+	t.Logf("elastic pool only JSON: %s", string(nb))
+
+	// Test with omitempty removed via different field
+	cfgNoOmit := struct {
+		ElasticPool ElasticPoolConfig `json:"elastic_pool"`
+	}{ElasticPool: ElasticPoolConfig{Enabled: true, GlobalCount: 3}}
+	ob, _ := json.MarshalIndent(cfgNoOmit, "", "  ")
+	t.Logf("without omitempty JSON: %s", string(ob))
+
+	content, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read config: %v", err)
+	}
+	t.Logf("file content: %s", string(content))
+	if !strings.Contains(string(content), "elastic_pool") {
+		t.Fatalf("expected persisted config to contain elastic_pool, got: %s", content)
+	}
+	if !strings.Contains(string(content), `"enabled": true`) {
+		t.Fatalf("expected elastic_pool.enabled=true in file, got: %s", content)
+	}
+
+	if !snap.ElasticPool.Enabled {
+		t.Fatal("Snapshot() should return ElasticPool.Enabled=true after Update")
+	}
+	if snap.ElasticPool.GlobalCount != 3 {
+		t.Fatalf("expected GlobalCount=3, got %d", snap.ElasticPool.GlobalCount)
+	}
+}
+
+func TestLoadStoreReadsElasticPoolFromFile(t *testing.T) {
+	path := t.TempDir() + "/config.json"
+	t.Setenv("DS2API_CONFIG_JSON", "")
+	t.Setenv("DS2API_CONFIG_PATH", path)
+
+	store := LoadStore()
+	if err := store.Update(func(c *Config) error {
+		c.ElasticPool = ElasticPoolConfig{Enabled: true, PerPool: true, DefaultCount: 2, NoToolsCount: 1, ToolsOnlyCount: 1}
+		return nil
+	}); err != nil {
+		t.Fatalf("update failed: %v", err)
+	}
+
+	reloaded := LoadStore()
+	snap := reloaded.Snapshot()
+	if !snap.ElasticPool.Enabled {
+		t.Fatal("expected ElasticPool.Enabled=true after reload from file")
+	}
+	if !snap.ElasticPool.PerPool {
+		t.Fatal("expected ElasticPool.PerPool=true after reload from file")
+	}
+	if snap.ElasticPool.DefaultCount != 2 {
+		t.Fatalf("expected DefaultCount=2 after reload, got %d", snap.ElasticPool.DefaultCount)
 	}
 }

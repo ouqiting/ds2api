@@ -51,6 +51,9 @@ func (c Config) MarshalJSON() ([]byte, error) {
 	if c.ExpertPromptSegment.Enabled != nil || c.ExpertPromptSegment.MaxChars != 0 || c.ExpertPromptSegment.StopDelayMs != 0 {
 		m["expert_prompt_segment"] = c.ExpertPromptSegment
 	}
+	if c.ElasticPool.Enabled || c.ElasticPool.PerPool || c.ElasticPool.GlobalCount != 0 || c.ElasticPool.DefaultCount != 0 || c.ElasticPool.NoToolsCount != 0 || c.ElasticPool.ToolsOnlyCount != 0 {
+		m["elastic_pool"] = c.ElasticPool
+	}
 	if strings.TrimSpace(c.Vercel.Token) != "" || strings.TrimSpace(c.Vercel.ProjectID) != "" || strings.TrimSpace(c.Vercel.TeamID) != "" {
 		m["vercel"] = NormalizeVercelConfig(c.Vercel)
 	}
@@ -135,6 +138,10 @@ func (c *Config) UnmarshalJSON(b []byte) error {
 			if err := json.Unmarshal(v, &c.ExpertPromptSegment); err != nil {
 				return fmt.Errorf("invalid field %q: %w", k, err)
 			}
+		case "elastic_pool":
+			if err := json.Unmarshal(v, &c.ElasticPool); err != nil {
+				return fmt.Errorf("invalid field %q: %w", k, err)
+			}
 		case "vercel":
 			if err := json.Unmarshal(v, &c.Vercel); err != nil {
 				return fmt.Errorf("invalid field %q: %w", k, err)
@@ -183,6 +190,7 @@ func (c Config) Clone() Config {
 			MaxChars:    c.ExpertPromptSegment.MaxChars,
 			StopDelayMs: c.ExpertPromptSegment.StopDelayMs,
 		},
+		ElasticPool:      c.ElasticPool,
 		Vercel:           c.Vercel,
 		VercelSyncHash:   c.VercelSyncHash,
 		VercelSyncTime:   c.VercelSyncTime,

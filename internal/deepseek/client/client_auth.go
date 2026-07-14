@@ -11,6 +11,7 @@ import (
 	"strings"
 	"unicode"
 
+	"ds2api/internal/account"
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
 )
@@ -125,6 +126,7 @@ func (c *Client) reportClientSettingsAfterLogin(ctx context.Context, a *auth.Req
 
 // persistMutedUntil 持久化账号禁言到期时间到配置。
 // muteUntil 为 DeepSeek 返回的 Unix 时间戳（秒，可能含小数）。
+// 当弹性号池开启时，在同一个事务内触发 ReconcileElasticPool 补位。
 func (c *Client) persistMutedUntil(identifier string, muteUntil float64) {
 	if c == nil || c.Store == nil || strings.TrimSpace(identifier) == "" || muteUntil <= 0 {
 		return
@@ -135,7 +137,10 @@ func (c *Client) persistMutedUntil(identifier string, muteUntil float64) {
 				continue
 			}
 			cfg.Accounts[i].MutedUntil = muteUntil
-			return nil
+			break
+		}
+		if cfg.ElasticPool.Enabled {
+			account.ReconcileElasticPool(cfg)
 		}
 		return nil
 	}); err != nil {

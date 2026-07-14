@@ -262,6 +262,8 @@ func (a *RequestAuth) DisableAccount() {
 
 // SetAccountMutedUntil 持久化账号禁言到期时间。
 // 与 DisableAccount 不同，这只是临时禁用，到期后号池会自动恢复调度。
+// 当弹性号池开启时，封号后立即在同一个事务内触发 ReconcileElasticPool
+// 补位：被封账号让出名额，按原始顺序从后面的休眠账号中启用一个补上。
 func (r *Resolver) SetAccountMutedUntil(a *RequestAuth, muteUntil float64) {
 	if !a.UseConfigToken || a.AccountID == "" || muteUntil <= 0 {
 		return
@@ -273,7 +275,10 @@ func (r *Resolver) SetAccountMutedUntil(a *RequestAuth, muteUntil float64) {
 				continue
 			}
 			c.Accounts[i].MutedUntil = muteUntil
-			return nil
+			break
+		}
+		if c.ElasticPool.Enabled {
+			account.ReconcileElasticPool(c)
 		}
 		return nil
 	}); err != nil {
@@ -281,6 +286,9 @@ func (r *Resolver) SetAccountMutedUntil(a *RequestAuth, muteUntil float64) {
 		return
 	}
 	a.Account.MutedUntil = muteUntil
+	if r.Pool != nil {
+		r.Pool.Reset()
+	}
 	config.Logger.Info("[muted_account] account muted until", "account", identifier, "mute_until", muteUntil)
 }
 

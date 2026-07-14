@@ -19,6 +19,9 @@ export function useAccountActions({ apiFetch, t, onMessage, onRefresh, config, f
     const [updatingProxy, setUpdatingProxy] = useState({})
     const [togglingEnabled, setTogglingEnabled] = useState({})
     const [togglingAllEnabled, setTogglingAllEnabled] = useState(false)
+    const [showElasticPool, setShowElasticPool] = useState(false)
+    const [elasticPool, setElasticPool] = useState({ enabled: false, per_pool: false, global_count: 3, default_count: 3, no_tools_count: 3, tools_only_count: 3 })
+    const [savingElasticPool, setSavingElasticPool] = useState(false)
 
     const openAddKey = () => {
         setEditingKey(null)
@@ -410,6 +413,81 @@ export function useAccountActions({ apiFetch, t, onMessage, onRefresh, config, f
         }
     }
 
+    const openElasticPool = () => {
+        const ep = config?.elastic_pool || {}
+        setElasticPool({
+            enabled: ep.enabled || false,
+            per_pool: ep.per_pool || false,
+            global_count: ep.global_count ?? 3,
+            default_count: ep.default_count ?? 3,
+            no_tools_count: ep.no_tools_count ?? 3,
+            tools_only_count: ep.tools_only_count ?? 3,
+        })
+        setShowElasticPool(true)
+    }
+
+    const closeElasticPool = () => {
+        setShowElasticPool(false)
+    }
+
+    const saveElasticPool = async () => {
+        const parseCount = (value) => {
+            if (value === '') {
+                return null
+            }
+            const n = Number(value)
+            if (Number.isNaN(n) || n < 0) {
+                return null
+            }
+            return n
+        }
+
+        const gc = parseCount(elasticPool.global_count)
+        const dc = parseCount(elasticPool.default_count)
+        const nc = parseCount(elasticPool.no_tools_count)
+        const tc = parseCount(elasticPool.tools_only_count)
+
+        if (gc === null || dc === null || nc === null || tc === null) {
+            return t('accountManager.elasticPoolCountInvalid')
+        }
+
+        const payload = {
+            enabled: elasticPool.enabled,
+            per_pool: elasticPool.per_pool,
+            global_count: gc,
+            default_count: dc,
+            no_tools_count: nc,
+            tools_only_count: tc,
+        }
+        if (!payload.per_pool) {
+            payload.default_count = gc
+            payload.no_tools_count = gc
+            payload.tools_only_count = gc
+        }
+
+        setSavingElasticPool(true)
+        try {
+            const res = await apiFetch('/admin/accounts/elastic-pool', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                return data.detail || t('messages.requestFailed')
+            }
+            onMessage('success', t('accountManager.elasticPoolSaveSuccess'))
+            await fetchAccounts()
+            await onRefresh()
+            setShowElasticPool(false)
+            return null
+        } catch (_err) {
+            return t('messages.networkError')
+        } finally {
+            setSavingElasticPool(false)
+        }
+    }
+
     return {
         showAddKey,
         openAddKey,
@@ -451,5 +529,12 @@ export function useAccountActions({ apiFetch, t, onMessage, onRefresh, config, f
         updateAccountProxy,
         toggleAccountEnabled,
         toggleAllAccountsEnabled,
+        showElasticPool,
+        openElasticPool,
+        closeElasticPool,
+        elasticPool,
+        setElasticPool,
+        savingElasticPool,
+        saveElasticPool,
     }
 }

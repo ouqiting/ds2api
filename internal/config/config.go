@@ -21,6 +21,7 @@ type Config struct {
 	CurrentInputFile    CurrentInputFileConfig    `json:"current_input_file,omitempty"`
 	ThinkingInjection   ThinkingInjectionConfig   `json:"thinking_injection,omitempty"`
 	ExpertPromptSegment ExpertPromptSegmentConfig `json:"expert_prompt_segment,omitempty"`
+	ElasticPool         ElasticPoolConfig         `json:"elastic_pool,omitempty"`
 	Vercel              VercelConfig              `json:"vercel,omitempty"`
 	VercelSyncHash      string                    `json:"_vercel_sync_hash,omitempty"`
 	VercelSyncTime      int64                     `json:"_vercel_sync_time,omitempty"`
@@ -190,6 +191,20 @@ type ExpertPromptSegmentConfig struct {
 	Enabled     *bool `json:"enabled,omitempty"`
 	MaxChars    int   `json:"max_chars,omitempty"`
 	StopDelayMs int   `json:"stop_delay_ms,omitempty"`
+}
+
+// ElasticPoolConfig 控制弹性号池行为。
+// 开启后按 config.Accounts 原始顺序在未禁言账号中启用前 N 个，
+// 其余禁用；封号(muted)账号一律禁用且不占名额。
+// PerPool=false 时所有账号共用 GlobalCount；PerPool=true 时
+// default/no_tools/tools_only 三种号池类型分别使用各自的 Count。
+type ElasticPoolConfig struct {
+	Enabled        bool `json:"enabled,omitempty"`
+	PerPool        bool `json:"per_pool,omitempty"`
+	GlobalCount    int  `json:"global_count,omitempty"`
+	DefaultCount   int  `json:"default_count,omitempty"`
+	NoToolsCount   int  `json:"no_tools_count,omitempty"`
+	ToolsOnlyCount int  `json:"tools_only_count,omitempty"`
 }
 
 type VercelConfig struct {
