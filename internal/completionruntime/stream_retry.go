@@ -16,14 +16,15 @@ import (
 )
 
 type StreamRetryOptions struct {
-	Surface          string
-	Stream           bool
-	RetryEnabled     bool
-	RetryMaxAttempts int
-	MaxAttempts      int
-	UsagePrompt      string
-	Request          promptcompat.StandardRequest
-	CurrentInputFile history.CurrentInputConfigReader
+	Surface             string
+	Stream              bool
+	RetryEnabled        bool
+	RetryMaxAttempts    int
+	MaxAttempts         int
+	UsagePrompt         string
+	Request             promptcompat.StandardRequest
+	CurrentInputFile    history.CurrentInputConfigReader
+	ExpertPromptSegment ExpertPromptSegmentConfigReader
 }
 
 type StreamRetryHooks struct {
@@ -207,6 +208,15 @@ func ExecuteStreamWithRetry(ctx context.Context, ds DeepSeekCaller, a *auth.Requ
 }
 
 func startPayloadCompletionOnAlternateAccount(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, payload map[string]any, opts StreamRetryOptions, maxAttempts int) (StartResult, *assistantturn.OutputError) {
+	if segments := shouldSegmentExpertPrompt(opts.Request, Options{ExpertPromptSegment: opts.ExpertPromptSegment}); segments != nil {
+		return StartCompletionWithSegments(ctx, ds, a, opts.Request, Options{
+			MaxAttempts:         maxAttempts,
+			RetryEnabled:        opts.RetryEnabled,
+			RetryMaxAttempts:    opts.RetryMaxAttempts,
+			CurrentInputFile:    opts.CurrentInputFile,
+			ExpertPromptSegment: opts.ExpertPromptSegment,
+		}, segments, segmentStopDelay(Options{ExpertPromptSegment: opts.ExpertPromptSegment}))
+	}
 	sessionID, err := ds.CreateSession(ctx, a, maxAttempts)
 	if err != nil {
 		return StartResult{}, authOutputError(a)

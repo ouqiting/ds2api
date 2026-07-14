@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -40,6 +41,14 @@ func (d *responsesHistoryDS) CallCompletion(_ context.Context, _ *auth.RequestAu
 		Header:     make(http.Header),
 		Body:       io.NopCloser(strings.NewReader("data: {\"p\":\"response/content\",\"v\":\"ok\"}\n")),
 	}, nil
+}
+
+func (d *responsesHistoryDS) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (d *responsesHistoryDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+	return 0, nil
 }
 
 func (d *responsesHistoryDS) DeleteSessionForToken(context.Context, string, string) (*dsclient.DeleteSessionResult, error) {

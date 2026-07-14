@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -20,9 +21,12 @@ import (
 
 type testGeminiConfig struct{}
 
-func (testGeminiConfig) ModelAliases() map[string]string { return nil }
-func (testGeminiConfig) CurrentInputFileEnabled() bool   { return true }
-func (testGeminiConfig) CurrentInputFileMinChars() int   { return 0 }
+func (testGeminiConfig) ModelAliases() map[string]string     { return nil }
+func (testGeminiConfig) CurrentInputFileEnabled() bool       { return true }
+func (testGeminiConfig) CurrentInputFileMinChars() int       { return 0 }
+func (testGeminiConfig) ExpertPromptSegmentEnabled() bool    { return false }
+func (testGeminiConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
+func (testGeminiConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
 
 type testGeminiAuth struct {
 	a   *auth.RequestAuth
@@ -85,6 +89,14 @@ func (m *testGeminiDS) CallCompletion(_ context.Context, _ *auth.RequestAuth, pa
 		return nil, m.err
 	}
 	return m.resp, nil
+}
+
+func (m *testGeminiDS) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (m *testGeminiDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+	return 0, nil
 }
 
 type geminiOpenAIErrorStub struct {

@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"ds2api/internal/assistantturn"
 	"ds2api/internal/auth"
@@ -22,6 +23,8 @@ type DeepSeekCaller interface {
 	GetPow(ctx context.Context, a *auth.RequestAuth, maxAttempts int) (string, error)
 	UploadFile(ctx context.Context, a *auth.RequestAuth, req dsclient.UploadFileRequest, maxAttempts int) (*dsclient.UploadFileResult, error)
 	CallCompletion(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string, maxAttempts int) (*http.Response, error)
+	StopStream(ctx context.Context, a *auth.RequestAuth, sessionID string, messageID int) error
+	FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string, stopDelay time.Duration) (int, error)
 }
 
 type Options struct {
@@ -30,6 +33,7 @@ type Options struct {
 	RetryEnabled          bool
 	RetryMaxAttempts      int
 	CurrentInputFile      history.CurrentInputConfigReader
+	ExpertPromptSegment   ExpertPromptSegmentConfigReader
 }
 
 type NonStreamResult struct {
@@ -48,6 +52,13 @@ type StartResult struct {
 }
 
 func StartCompletion(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options) (StartResult, *assistantturn.OutputError) {
+	if segments := shouldSegmentExpertPrompt(stdReq, opts); segments != nil {
+		return StartCompletionWithSegments(ctx, ds, a, stdReq, opts, segments, segmentStopDelay(opts))
+	}
+	return startCompletionOnce(ctx, ds, a, stdReq, opts)
+}
+
+func startCompletionOnce(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options) (StartResult, *assistantturn.OutputError) {
 	maxAttempts := opts.MaxAttempts
 	if maxAttempts <= 0 {
 		maxAttempts = 3
@@ -223,6 +234,9 @@ func isAccountMuted(outErr *assistantturn.OutputError) bool {
 }
 
 func startStandardCompletionOnAlternateAccount(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options, maxAttempts int) (StartResult, *assistantturn.OutputError) {
+	if segments := shouldSegmentExpertPrompt(stdReq, opts); segments != nil {
+		return StartCompletionWithSegments(ctx, ds, a, stdReq, opts, segments, segmentStopDelay(opts))
+	}
 	var prepErr *assistantturn.OutputError
 	stdReq, prepErr = reuploadCurrentInputFileForAccount(ctx, ds, a, stdReq, opts)
 	if prepErr != nil {

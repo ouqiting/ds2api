@@ -237,6 +237,14 @@ func (m *vercelReleaseAutoDeleteDSStub) CallCompletion(_ context.Context, _ *aut
 	return m.resp, nil
 }
 
+func (m *vercelReleaseAutoDeleteDSStub) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (m *vercelReleaseAutoDeleteDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+	return 0, nil
+}
+
 func (m *vercelReleaseAutoDeleteDSStub) DeleteSessionForToken(_ context.Context, token string, sessionID string) (*dsclient.DeleteSessionResult, error) {
 	if m.events != nil {
 		*m.events = append(*m.events, "delete")

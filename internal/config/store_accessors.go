@@ -174,3 +174,30 @@ func (s *Store) ThinkingInjectionPrompt() string {
 	defer s.mu.RUnlock()
 	return strings.TrimSpace(s.cfg.ThinkingInjection.Prompt)
 }
+
+func (s *Store) ExpertPromptSegmentEnabled() bool {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.cfg.ExpertPromptSegment.Enabled == nil {
+		return true
+	}
+	return *s.cfg.ExpertPromptSegment.Enabled
+}
+
+func (s *Store) ExpertPromptSegmentMaxChars() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.cfg.ExpertPromptSegment.MaxChars > 0 {
+		return s.cfg.ExpertPromptSegment.MaxChars
+	}
+	return 90000
+}
+
+func (s *Store) ExpertPromptSegmentStopDelayMs() int {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	if s.cfg.ExpertPromptSegment.StopDelayMs > 0 {
+		return s.cfg.ExpertPromptSegment.StopDelayMs
+	}
+	return 1500
+}
