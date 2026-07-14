@@ -57,8 +57,7 @@ type streamState struct {
 }
 
 type streamOutcome struct {
-	state streamState
-	step  stepResult
+	state *streamState
 }
 
 var (
@@ -313,14 +312,14 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 			r.Duration = time.Since(start)
 			streamCancel()
 			<-doneCh
-			outcome.state = state
+			outcome.state = &state
 			return outcome, r
 		case <-doneCh:
 			// 流提前结束
 			r.Err = "流在捕获 response_message_id 前就结束了"
 			r.StatusCode = resp.StatusCode
 			r.Duration = time.Since(start)
-			outcome.state = state
+			outcome.state = &state
 			if state.err != nil {
 				r.Err = state.err.Error()
 			}
@@ -352,11 +351,11 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 	r.Duration = time.Since(start)
 	if state.err != nil && state.err != context.Canceled {
 		r.Err = state.err.Error()
-		outcome.state = state
+		outcome.state = &state
 		return outcome, r
 	}
 	r.Success = true
-	outcome.state = state
+	outcome.state = &state
 	return outcome, r
 }
 

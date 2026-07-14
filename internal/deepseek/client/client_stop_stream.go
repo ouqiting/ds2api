@@ -148,7 +148,9 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 
 	drainDone := make(chan struct{})
 	go func() {
-		io.Copy(io.Discard, reader)
+		if _, err := io.Copy(io.Discard, reader); err != nil {
+			config.Logger.Warn("[fire_completion_and_stop] drain stream error", "session_id", sessionID, "account", a.AccountID, "error", err)
+		}
 		close(drainDone)
 	}()
 
