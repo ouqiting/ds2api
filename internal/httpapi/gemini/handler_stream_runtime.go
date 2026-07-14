@@ -117,13 +117,14 @@ func (h *Handler) handleStreamGenerateContentWithRetry(w http.ResponseWriter, r 
 	runtime := newGeminiStreamRuntime(w, rc, canFlush, model, finalPrompt, thinkingEnabled, searchEnabled, stripReferenceMarkersEnabled(), toolNames, toolsRaw, historySession)
 
 	completionruntime.ExecuteStreamWithRetry(r.Context(), h.DS, a, resp, payload, pow, completionruntime.StreamRetryOptions{
-		Surface:          "gemini.generate_content",
-		Stream:           true,
-		RetryEnabled:     true,
-		MaxAttempts:      3,
-		UsagePrompt:      finalPrompt,
-		Request:          stdReq,
-		CurrentInputFile: h.Store,
+		Surface:             "gemini.generate_content",
+		Stream:              true,
+		RetryEnabled:        true,
+		MaxAttempts:         3,
+		UsagePrompt:         finalPrompt,
+		Request:             stdReq,
+		CurrentInputFile:    h.Store,
+		ExpertPromptSegment: h.Store,
 	}, completionruntime.StreamRetryHooks{
 		ConsumeAttempt: func(currentResp *http.Response, allowDeferEmpty bool) (bool, bool) {
 			return h.consumeGeminiStreamAttempt(r.Context(), currentResp, runtime, thinkingEnabled, allowDeferEmpty)

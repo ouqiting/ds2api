@@ -14,8 +14,11 @@ type claudeProxyStoreStub struct {
 
 func (s claudeProxyStoreStub) ModelAliases() map[string]string { return s.aliases }
 
-func (claudeProxyStoreStub) CurrentInputFileEnabled() bool { return true }
-func (claudeProxyStoreStub) CurrentInputFileMinChars() int { return 0 }
+func (claudeProxyStoreStub) CurrentInputFileEnabled() bool       { return true }
+func (claudeProxyStoreStub) CurrentInputFileMinChars() int       { return 0 }
+func (claudeProxyStoreStub) ExpertPromptSegmentEnabled() bool    { return false }
+func (claudeProxyStoreStub) ExpertPromptSegmentMaxChars() int    { return 120000 }
+func (claudeProxyStoreStub) ExpertPromptSegmentStopDelayMs() int { return 2000 }
 
 type openAIProxyStub struct {
 	status int

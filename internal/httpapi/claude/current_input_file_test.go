@@ -21,9 +21,12 @@ type claudeHistoryConfig struct {
 	aliases map[string]string
 }
 
-func (m claudeHistoryConfig) ModelAliases() map[string]string { return m.aliases }
-func (claudeHistoryConfig) CurrentInputFileEnabled() bool     { return false }
-func (claudeHistoryConfig) CurrentInputFileMinChars() int     { return 0 }
+func (m claudeHistoryConfig) ModelAliases() map[string]string   { return m.aliases }
+func (claudeHistoryConfig) CurrentInputFileEnabled() bool       { return false }
+func (claudeHistoryConfig) CurrentInputFileMinChars() int       { return 0 }
+func (claudeHistoryConfig) ExpertPromptSegmentEnabled() bool    { return false }
+func (claudeHistoryConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
+func (claudeHistoryConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
 
 func (claudeCurrentInputAuth) Determine(*http.Request) (*auth.RequestAuth, error) {
 	return &auth.RequestAuth{

@@ -29,6 +29,9 @@ type ConfigReader interface {
 	ModelAliases() map[string]string
 	CurrentInputFileEnabled() bool
 	CurrentInputFileMinChars() int
+	ExpertPromptSegmentEnabled() bool
+	ExpertPromptSegmentMaxChars() int
+	ExpertPromptSegmentStopDelayMs() int
 }
 
 type OpenAIChatRunner interface {

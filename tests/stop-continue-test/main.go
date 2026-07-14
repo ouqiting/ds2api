@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 
 	dsprotocol "ds2api/internal/deepseek/protocol"
+	"ds2api/internal/sse"
 	"ds2api/pow"
 	"github.com/andybalholm/brotli"
 )
@@ -52,6 +53,7 @@ type streamState struct {
 	rawSSE            string
 	finished          bool
 	err               error
+	currentType       string
 }
 
 type streamOutcome struct {
@@ -266,7 +268,7 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 		return outcome, r
 	}
 
-	state := streamState{}
+	state := streamState{currentType: "thinking"}
 	idCh := make(chan int, 1)
 	doneCh := make(chan struct{})
 
@@ -402,82 +404,59 @@ func doStopStream(ctx context.Context, token, sessionID string, messageID int) s
 
 // observeLine 解析一行 SSE，更新 state，并在首次拿到 response_message_id 时通知 idCh。
 func observeLine(line string, state *streamState, idCh chan<- int) {
-	trimmed := strings.TrimSpace(line)
-	if trimmed == "" {
+	// ParseDeepSeekContentLine 不暴露 status，这里单独提取一次。
+	if chunk, _, parsed := sse.ParseDeepSeekSSELine([]byte(line)); parsed && chunk != nil {
+		extractStatus(chunk, state)
+	}
+	result := sse.ParseDeepSeekContentLine([]byte(line), true, state.currentType)
+	state.currentType = result.NextType
+	if !result.Parsed {
 		return
 	}
-	if !strings.HasPrefix(trimmed, "data:") {
-		return
-	}
-	data := strings.TrimSpace(strings.TrimPrefix(trimmed, "data:"))
-	if data == "[DONE]" {
-		state.hadDone = true
-		state.finished = true
-		return
-	}
-	var chunk map[string]any
-	if err := json.Unmarshal([]byte(data), &chunk); err != nil {
-		return
-	}
-	// top-level response_message_id
-	if id := intFrom(chunk["response_message_id"]); id > 0 && state.responseMessageID == 0 {
-		state.responseMessageID = id
+	if result.ResponseMessageID > 0 && state.responseMessageID == 0 {
+		state.responseMessageID = result.ResponseMessageID
 		select {
-		case idCh <- id:
+		case idCh <- result.ResponseMessageID:
 		default:
 		}
 	}
-	// direct patch: p + v
-	if p, _ := chunk["p"].(string); p != "" {
-		applyPatch(state, p, chunk["v"])
+	if result.Stop {
+		state.hadDone = true
+		state.finished = true
+		if result.ErrorMessage != "" {
+			state.status = result.ErrorMessage
+		} else if result.ContentFilter {
+			state.status = "content_filter"
+		}
 	}
-	// v as object containing response
+	for _, p := range result.Parts {
+		if p.Type == "thinking" {
+			state.thinking += p.Text
+		} else {
+			state.content += p.Text
+		}
+	}
+}
+
+// extractStatus 从 SSE chunk 中提取 response status（INCOMPLETE/FINISHED 等）。
+func extractStatus(chunk map[string]any, state *streamState) {
+	if p, _ := chunk["p"].(string); p == "response/status" || p == "status" || p == "response/quasi_status" || p == "quasi_status" {
+		if s, _ := chunk["v"].(string); s != "" {
+			state.status = s
+		}
+	}
 	if v, ok := chunk["v"].(map[string]any); ok {
-		observeResponseObject(state, v["response"])
-	}
-	// v as array of patches
-	if patches, ok := chunk["v"].([]any); ok {
-		for _, patch := range patches {
-			if m, ok := patch.(map[string]any); ok {
-				p := getString(m, "p")
-				if p != "" {
-					applyPatch(state, p, m["v"])
-				}
+		if response, _ := v["response"].(map[string]any); response != nil {
+			if s, _ := response["status"].(string); s != "" {
+				state.status = s
 			}
 		}
 	}
-	// message.response 嵌套
 	if message, ok := chunk["message"].(map[string]any); ok {
-		observeResponseObject(state, message["response"])
-	}
-}
-
-func observeResponseObject(state *streamState, raw any) {
-	response, _ := raw.(map[string]any)
-	if response == nil {
-		return
-	}
-	if id := intFrom(response["message_id"]); id > 0 && state.responseMessageID == 0 {
-		state.responseMessageID = id
-	}
-	if status, _ := response["status"].(string); status != "" {
-		state.status = status
-	}
-}
-
-func applyPatch(state *streamState, path string, value any) {
-	switch strings.Trim(strings.TrimSpace(path), "/") {
-	case "response/content", "content":
-		if s, ok := value.(string); ok {
-			state.content += s
-		}
-	case "response/thinking_content", "thinking_content":
-		if s, ok := value.(string); ok {
-			state.thinking += s
-		}
-	case "response/status", "status", "response/quasi_status", "quasi_status":
-		if s, ok := value.(string); ok {
-			state.status = s
+		if response, _ := message["response"].(map[string]any); response != nil {
+			if s, _ := response["status"].(string); s != "" {
+				state.status = s
+			}
 		}
 	}
 }

@@ -8,22 +8,23 @@ import (
 )
 
 type Config struct {
-	Keys              []string                `json:"keys,omitempty"`
-	APIKeys           []APIKey                `json:"api_keys,omitempty"`
-	Accounts          []Account               `json:"accounts,omitempty"`
-	Proxies           []Proxy                 `json:"proxies,omitempty"`
-	ModelAliases      map[string]string       `json:"model_aliases,omitempty"`
-	Admin             AdminConfig             `json:"admin,omitempty"`
-	Runtime           RuntimeConfig           `json:"runtime,omitempty"`
-	Responses         ResponsesConfig         `json:"responses,omitempty"`
-	Embeddings        EmbeddingsConfig        `json:"embeddings,omitempty"`
-	AutoDelete        AutoDeleteConfig        `json:"auto_delete"`
-	CurrentInputFile  CurrentInputFileConfig  `json:"current_input_file,omitempty"`
-	ThinkingInjection ThinkingInjectionConfig `json:"thinking_injection,omitempty"`
-	Vercel            VercelConfig            `json:"vercel,omitempty"`
-	VercelSyncHash    string                  `json:"_vercel_sync_hash,omitempty"`
-	VercelSyncTime    int64                   `json:"_vercel_sync_time,omitempty"`
-	AdditionalFields  map[string]any          `json:"-"`
+	Keys                []string                  `json:"keys,omitempty"`
+	APIKeys             []APIKey                  `json:"api_keys,omitempty"`
+	Accounts            []Account                 `json:"accounts,omitempty"`
+	Proxies             []Proxy                   `json:"proxies,omitempty"`
+	ModelAliases        map[string]string         `json:"model_aliases,omitempty"`
+	Admin               AdminConfig               `json:"admin,omitempty"`
+	Runtime             RuntimeConfig             `json:"runtime,omitempty"`
+	Responses           ResponsesConfig           `json:"responses,omitempty"`
+	Embeddings          EmbeddingsConfig          `json:"embeddings,omitempty"`
+	AutoDelete          AutoDeleteConfig          `json:"auto_delete"`
+	CurrentInputFile    CurrentInputFileConfig    `json:"current_input_file,omitempty"`
+	ThinkingInjection   ThinkingInjectionConfig   `json:"thinking_injection,omitempty"`
+	ExpertPromptSegment ExpertPromptSegmentConfig `json:"expert_prompt_segment,omitempty"`
+	Vercel              VercelConfig              `json:"vercel,omitempty"`
+	VercelSyncHash      string                    `json:"_vercel_sync_hash,omitempty"`
+	VercelSyncTime      int64                     `json:"_vercel_sync_time,omitempty"`
+	AdditionalFields    map[string]any            `json:"-"`
 }
 
 type Account struct {
@@ -183,6 +184,12 @@ type CurrentInputFileConfig struct {
 type ThinkingInjectionConfig struct {
 	Enabled *bool  `json:"enabled,omitempty"`
 	Prompt  string `json:"prompt,omitempty"`
+}
+
+type ExpertPromptSegmentConfig struct {
+	Enabled     *bool `json:"enabled,omitempty"`
+	MaxChars    int   `json:"max_chars,omitempty"`
+	StopDelayMs int   `json:"stop_delay_ms,omitempty"`
 }
 
 type VercelConfig struct {

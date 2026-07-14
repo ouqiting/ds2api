@@ -47,7 +47,10 @@ func (m mockOpenAIConfig) ThinkingInjectionEnabled() bool {
 	}
 	return *m.thinkingInjection
 }
-func (m mockOpenAIConfig) ThinkingInjectionPrompt() string { return m.thinkingPrompt }
+func (m mockOpenAIConfig) ThinkingInjectionPrompt() string   { return m.thinkingPrompt }
+func (mockOpenAIConfig) ExpertPromptSegmentEnabled() bool    { return false }
+func (mockOpenAIConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
+func (mockOpenAIConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
 
 type streamStatusAuthStub struct{}
 

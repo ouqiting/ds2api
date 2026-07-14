@@ -6,6 +6,7 @@ import SecuritySection from './SecuritySection'
 import RuntimeSection from './RuntimeSection'
 import BehaviorSection from './BehaviorSection'
 import CurrentInputFileSection from './CurrentInputFileSection'
+import ExpertPromptSegmentSection from './ExpertPromptSegmentSection'
 import AutoDeleteSection from './AutoDeleteSection'
 import ModelSection from './ModelSection'
 import BackupSection from './BackupSection'
@@ -96,6 +97,8 @@ export default function SettingsContainer({ onRefresh, onMessage, authFetch, onF
             <BehaviorSection t={t} form={form} setForm={setForm} />
 
             <CurrentInputFileSection t={t} form={form} setForm={setForm} />
+
+            <ExpertPromptSegmentSection t={t} form={form} setForm={setForm} />
 
             <AutoDeleteSection t={t} form={form} setForm={setForm} />
 

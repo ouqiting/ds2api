@@ -27,6 +27,9 @@ func ValidateConfig(c Config) error {
 	if err := ValidateCurrentInputFileConfig(c.CurrentInputFile); err != nil {
 		return err
 	}
+	if err := ValidateExpertPromptSegmentConfig(c.ExpertPromptSegment); err != nil {
+		return err
+	}
 	if err := ValidateAccountProxyReferences(c.Accounts, c.Proxies); err != nil {
 		return err
 	}
@@ -117,6 +120,20 @@ func ValidateAutoDeleteConfig(autoDelete AutoDeleteConfig) error {
 func ValidateCurrentInputFileConfig(currentInputFile CurrentInputFileConfig) error {
 	if currentInputFile.MinChars != 0 {
 		return ValidateIntRange("current_input_file.min_chars", currentInputFile.MinChars, 1, 100000000, true)
+	}
+	return nil
+}
+
+func ValidateExpertPromptSegmentConfig(cfg ExpertPromptSegmentConfig) error {
+	if cfg.MaxChars != 0 {
+		if err := ValidateIntRange("expert_prompt_segment.max_chars", cfg.MaxChars, 1000, 100000000, true); err != nil {
+			return err
+		}
+	}
+	if cfg.StopDelayMs != 0 {
+		if err := ValidateIntRange("expert_prompt_segment.stop_delay_ms", cfg.StopDelayMs, 0, 60000, true); err != nil {
+			return err
+		}
 	}
 	return nil
 }

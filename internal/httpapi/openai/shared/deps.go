@@ -50,6 +50,9 @@ type ConfigReader interface {
 	CurrentInputFileMinChars() int
 	ThinkingInjectionEnabled() bool
 	ThinkingInjectionPrompt() string
+	ExpertPromptSegmentEnabled() bool
+	ExpertPromptSegmentMaxChars() int
+	ExpertPromptSegmentStopDelayMs() int
 }
 
 type Deps struct {

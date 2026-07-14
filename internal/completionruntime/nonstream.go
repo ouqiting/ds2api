@@ -33,6 +33,7 @@ type Options struct {
 	RetryEnabled          bool
 	RetryMaxAttempts      int
 	CurrentInputFile      history.CurrentInputConfigReader
+	ExpertPromptSegment   ExpertPromptSegmentConfigReader
 }
 
 type NonStreamResult struct {
@@ -51,6 +52,13 @@ type StartResult struct {
 }
 
 func StartCompletion(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options) (StartResult, *assistantturn.OutputError) {
+	if segments := shouldSegmentExpertPrompt(stdReq, opts); segments != nil {
+		return StartCompletionWithSegments(ctx, ds, a, stdReq, opts, segments, segmentStopDelay(opts))
+	}
+	return startCompletionOnce(ctx, ds, a, stdReq, opts)
+}
+
+func startCompletionOnce(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options) (StartResult, *assistantturn.OutputError) {
 	maxAttempts := opts.MaxAttempts
 	if maxAttempts <= 0 {
 		maxAttempts = 3
@@ -226,6 +234,9 @@ func isAccountMuted(outErr *assistantturn.OutputError) bool {
 }
 
 func startStandardCompletionOnAlternateAccount(ctx context.Context, ds DeepSeekCaller, a *auth.RequestAuth, stdReq promptcompat.StandardRequest, opts Options, maxAttempts int) (StartResult, *assistantturn.OutputError) {
+	if segments := shouldSegmentExpertPrompt(stdReq, opts); segments != nil {
+		return StartCompletionWithSegments(ctx, ds, a, stdReq, opts, segments, segmentStopDelay(opts))
+	}
 	var prepErr *assistantturn.OutputError
 	stdReq, prepErr = reuploadCurrentInputFileForAccount(ctx, ds, a, stdReq, opts)
 	if prepErr != nil {
