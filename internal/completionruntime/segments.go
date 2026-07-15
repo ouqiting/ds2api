@@ -40,6 +40,7 @@ func StartCompletionWithSegments(ctx context.Context, ds DeepSeekCaller, a *auth
 			return StartResult{SessionID: sessionID, Request: stdReq}, &assistantturn.OutputError{Status: http.StatusUnauthorized, Message: "Failed to get PoW (invalid token or unknown error).", Code: "error"}
 		}
 		segPayload := stdReq.CompletionPayloadWithParentAndPrompt(sessionID, parentMessageID, segments[i])
+		logSegmentPayload("fire-stop", i, len(segments), sessionID, parentMessageID, segments[i])
 		respID, err := ds.FireCompletionAndStop(ctx, a, segPayload, segPow, stopDelay)
 		if err != nil {
 			if dsclient.IsMutedError(err) {
@@ -49,6 +50,7 @@ func StartCompletionWithSegments(ctx context.Context, ds DeepSeekCaller, a *auth
 			return StartResult{SessionID: sessionID, Request: stdReq}, &assistantturn.OutputError{Status: http.StatusInternalServerError, Message: "Failed to send segment before stop: " + err.Error(), Code: "error"}
 		}
 		parentMessageID = respID
+		waitForStoppedSegmentSettle(ctx, sessionID, parentMessageID, stopDelay)
 	}
 
 	finalPow, err := ds.GetPow(ctx, a, maxAttempts)
@@ -56,6 +58,7 @@ func StartCompletionWithSegments(ctx context.Context, ds DeepSeekCaller, a *auth
 		return StartResult{SessionID: sessionID, Request: stdReq}, &assistantturn.OutputError{Status: http.StatusUnauthorized, Message: "Failed to get PoW (invalid token or unknown error).", Code: "error"}
 	}
 	finalPayload := stdReq.CompletionPayloadWithParentAndPrompt(sessionID, parentMessageID, segments[len(segments)-1])
+	logSegmentPayload("final", len(segments)-1, len(segments), sessionID, parentMessageID, segments[len(segments)-1])
 	resp, err := ds.CallCompletion(ctx, a, finalPayload, finalPow, maxAttempts)
 	if err != nil {
 		if dsclient.IsMutedError(err) {
@@ -64,4 +67,31 @@ func StartCompletionWithSegments(ctx context.Context, ds DeepSeekCaller, a *auth
 		return StartResult{SessionID: sessionID, Payload: finalPayload, Pow: finalPow, Request: stdReq}, &assistantturn.OutputError{Status: http.StatusInternalServerError, Message: "Failed to get completion.", Code: "error"}
 	}
 	return StartResult{SessionID: sessionID, Payload: finalPayload, Pow: finalPow, Response: resp, Request: stdReq}, nil
+}
+
+func waitForStoppedSegmentSettle(ctx context.Context, sessionID string, parentMessageID int, stopDelay time.Duration) {
+	if stopDelay <= 0 {
+		return
+	}
+	settleDelay := 1 * time.Second
+	if stopDelay > settleDelay {
+		settleDelay = stopDelay
+	}
+	config.Logger.Info("[start_completion_with_segments] waiting for stopped segment settle", "session_id", sessionID, "parent_message_id", parentMessageID, "settle_delay", settleDelay)
+	select {
+	case <-time.After(settleDelay):
+	case <-ctx.Done():
+		config.Logger.Warn("[start_completion_with_segments] stopped segment settle interrupted", "session_id", sessionID, "parent_message_id", parentMessageID, "error", ctx.Err())
+	}
+}
+
+func logSegmentPayload(kind string, index int, total int, sessionID string, parentMessageID int, prompt string) {
+	config.Logger.Info("[start_completion_with_segments] sending segment",
+		"kind", kind,
+		"segment_index", index,
+		"segment_total", total,
+		"session_id", sessionID,
+		"parent_message_id", parentMessageID,
+		"prompt_runes", len([]rune(prompt)),
+	)
 }

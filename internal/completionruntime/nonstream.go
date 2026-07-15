@@ -189,19 +189,46 @@ func ExecuteNonStreamStartedWithRetry(ctx context.Context, ds DeepSeekCaller, a 
 		}
 
 		attempts++
-		config.Logger.Info("[completion_runtime_empty_retry] attempting synthetic retry", "surface", stdReq.Surface, "stream", false, "retry_attempt", attempts, "parent_message_id", turn.ResponseMessageID)
+		parentMessageID := retryParentMessageID(turn.ResponseMessageID, payload)
+		config.Logger.Info("[completion_runtime_empty_retry] attempting synthetic retry", "surface", stdReq.Surface, "stream", false, "retry_attempt", attempts, "parent_message_id", parentMessageID)
 		retryPow, powErr := ds.GetPow(ctx, a, maxAttempts)
 		if powErr != nil {
 			config.Logger.Warn("[completion_runtime_empty_retry] retry PoW fetch failed, falling back to original PoW", "surface", stdReq.Surface, "retry_attempt", attempts, "error", powErr)
 			retryPow = pow
 		}
-		retryPayload := shared.ClonePayloadForEmptyOutputRetry(payload, turn.ResponseMessageID)
+		retryPayload := shared.ClonePayloadForEmptyOutputRetry(payload, parentMessageID)
 		nextResp, err := ds.CallCompletion(ctx, a, retryPayload, retryPow, maxAttempts)
 		if err != nil {
 			return NonStreamResult{SessionID: sessionID, Payload: payload, Turn: turn, Attempts: attempts}, &assistantturn.OutputError{Status: http.StatusInternalServerError, Message: "Failed to get completion.", Code: "error"}
 		}
+		payload = retryPayload
 		usagePrompt = shared.UsagePromptWithEmptyOutputRetry(usagePrompt, attempts)
 		currentResp = nextResp
+	}
+}
+
+func retryParentMessageID(observed int, payload map[string]any) int {
+	if observed > 0 {
+		return observed
+	}
+	return payloadParentMessageID(payload)
+}
+
+func payloadParentMessageID(payload map[string]any) int {
+	if payload == nil {
+		return 0
+	}
+	switch v := payload["parent_message_id"].(type) {
+	case int:
+		return v
+	case int64:
+		return int(v)
+	case float64:
+		return int(v)
+	case float32:
+		return int(v)
+	default:
+		return 0
 	}
 }
 

@@ -5,21 +5,19 @@ import (
 	"testing"
 )
 
-func TestSplitByRoleBoundary_NoSplitWhenUnderThreshold(t *testing.T) {
+func TestSplitByMaxRunesNoSplitWhenUnderThreshold(t *testing.T) {
 	prompt := "<System>:hello<User>:world<Assistant>:"
-	segments := SplitByRoleBoundary(prompt, 1000)
+	segments := SplitByMaxRunes(prompt, 1000)
 	if len(segments) != 1 || segments[0] != prompt {
 		t.Fatalf("expected single segment, got %d segments: %v", len(segments), segments)
 	}
 }
 
-func TestSplitByRoleBoundary_SplitsAtRoleBoundary(t *testing.T) {
-	long1 := strings.Repeat("A", 50)
-	long2 := strings.Repeat("B", 50)
-	prompt := "<User>:" + long1 + "<Assistant>:" + long2 + "<User>:final question<Assistant>:"
-	segments := SplitByRoleBoundary(prompt, 60)
-	if len(segments) < 2 {
-		t.Fatalf("expected at least 2 segments, got %d", len(segments))
+func TestSplitByMaxRunesCutsAtConfiguredLength(t *testing.T) {
+	prompt := strings.Repeat("A", 50) + "<User>:[Start a new chat]" + strings.Repeat("B", 50)
+	segments := SplitByMaxRunes(prompt, 60)
+	if len(segments) != 3 {
+		t.Fatalf("expected 3 segments, got %d: %v", len(segments), segments)
 	}
 	joined := strings.Join(segments, "")
 	if joined != prompt {
@@ -32,42 +30,31 @@ func TestSplitByRoleBoundary_SplitsAtRoleBoundary(t *testing.T) {
 	}
 }
 
-func TestSplitByRoleBoundary_HardCutsOversizedBlock(t *testing.T) {
-	longText := strings.Repeat("X", 300)
-	prompt := "<User>:" + longText + "<Assistant>:"
-	segments := SplitByRoleBoundary(prompt, 100)
-	if len(segments) < 3 {
-		t.Fatalf("expected at least 3 segments for oversized block, got %d", len(segments))
-	}
-	joined := strings.Join(segments, "")
-	if joined != prompt {
-		t.Fatalf("segments do not reconstruct original prompt")
+func TestSplitByMaxRunesDoesNotCreateRoleMarkerOnlySegment(t *testing.T) {
+	prefix := strings.Repeat("A", 55)
+	marker := "<User>:[Start a new chat]"
+	suffix := strings.Repeat("B", 20)
+	prompt := prefix + marker + suffix
+
+	segments := SplitByMaxRunes(prompt, 60)
+	if len(segments) != 2 {
+		t.Fatalf("expected 2 segments, got %d: %v", len(segments), segments)
 	}
 	for i, seg := range segments {
-		if len([]rune(seg)) > 100 {
-			t.Fatalf("segment %d exceeds maxChars: %d > 100", i, len([]rune(seg)))
+		if seg == marker {
+			t.Fatalf("segment %d contains only marker text: %q", i, seg)
 		}
 	}
-}
-
-func TestSplitByRoleBoundary_PreservesTrailingAssistantMarker(t *testing.T) {
-	long1 := strings.Repeat("A", 50)
-	prompt := "<System>:" + long1 + "<User>:question<Assistant>:"
-	segments := SplitByRoleBoundary(prompt, 60)
-	if len(segments) < 2 {
-		t.Fatalf("expected at least 2 segments, got %d", len(segments))
-	}
-	last := segments[len(segments)-1]
-	if !strings.HasSuffix(last, "<Assistant>:") {
-		t.Fatalf("expected last segment to end with <Assistant>:, got %q", last)
+	if joined := strings.Join(segments, ""); joined != prompt {
+		t.Fatalf("segments do not reconstruct original prompt")
 	}
 }
 
-func TestSplitByRoleBoundary_SingleBlockNoMarkers(t *testing.T) {
+func TestSplitByMaxRunesSingleBlockNoMarkers(t *testing.T) {
 	longText := strings.Repeat("X", 200)
-	segments := SplitByRoleBoundary(longText, 50)
-	if len(segments) < 3 {
-		t.Fatalf("expected at least 3 segments, got %d", len(segments))
+	segments := SplitByMaxRunes(longText, 50)
+	if len(segments) != 4 {
+		t.Fatalf("expected 4 segments, got %d", len(segments))
 	}
 	joined := strings.Join(segments, "")
 	if joined != longText {
@@ -75,17 +62,28 @@ func TestSplitByRoleBoundary_SingleBlockNoMarkers(t *testing.T) {
 	}
 }
 
-func TestSplitByRoleBoundary_EmptyPrompt(t *testing.T) {
-	segments := SplitByRoleBoundary("", 100)
+func TestSplitByMaxRunesEmptyPrompt(t *testing.T) {
+	segments := SplitByMaxRunes("", 100)
 	if len(segments) != 1 || segments[0] != "" {
 		t.Fatalf("expected single empty segment, got %v", segments)
 	}
 }
 
-func TestSplitByRoleBoundary_ExactThreshold(t *testing.T) {
+func TestSplitByMaxRunesExactThreshold(t *testing.T) {
 	prompt := "<User>:hello<Assistant>:"
-	segments := SplitByRoleBoundary(prompt, len([]rune(prompt)))
+	segments := SplitByMaxRunes(prompt, len([]rune(prompt)))
 	if len(segments) != 1 {
 		t.Fatalf("expected single segment when at exact threshold, got %d", len(segments))
+	}
+}
+
+func TestSplitByRoleBoundaryUsesMaxRuneSplitting(t *testing.T) {
+	prompt := strings.Repeat("A", 55) + "<User>:short" + strings.Repeat("B", 10)
+	segments := SplitByRoleBoundary(prompt, 60)
+	if len(segments) != 2 {
+		t.Fatalf("expected compatibility wrapper to split by max runes, got %d", len(segments))
+	}
+	if strings.Join(segments, "") != prompt {
+		t.Fatalf("segments do not reconstruct original prompt")
 	}
 }

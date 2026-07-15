@@ -36,7 +36,7 @@ func (c *Client) StopStream(ctx context.Context, a *auth.RequestAuth, sessionID 
 		config.Logger.Warn("[stop_stream] non-success response", "session_id", sessionID, "message_id", messageID, "account", a.AccountID, "status", status, "code", code, "biz_code", bizCode, "msg", msg, "biz_msg", bizMsg, "resp", fmt.Sprintf("%v", resp))
 		return fmt.Errorf("stop_stream failed: status=%d code=%d biz_code=%d msg=%s biz_msg=%s", status, code, bizCode, msg, bizMsg)
 	}
-	config.Logger.Info("[stop_stream] ok", "session_id", sessionID, "message_id", messageID, "account", a.AccountID, "resp", fmt.Sprintf("%v", resp))
+	config.Logger.Info("[stop_stream] ok", "session_id", sessionID, "message_id", messageID, "account", a.AccountID)
 	return nil
 }
 
@@ -80,6 +80,7 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 
 	responseMessageID := 0
 	requestMessageID := 0
+	initialStableSeen := false
 	var ssePreview strings.Builder
 	reader := bufio.NewReaderSize(resp.Body, 64*1024)
 	for {
@@ -108,6 +109,9 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 							requestMessageID = id
 						}
 						extractResponseMessageID(chunk, &responseMessageID)
+						if stoppedSegmentStableChunk(chunk) {
+							initialStableSeen = true
+						}
 					}
 				}
 			}
@@ -146,36 +150,139 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 	}
 	config.Logger.Info("[fire_completion_and_stop] captured ids", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
 
+	stableCh := make(chan struct{}, 1)
+	signalStable := func() {
+		select {
+		case stableCh <- struct{}{}:
+		default:
+		}
+	}
 	drainDone := make(chan struct{})
 	go func() {
-		if _, err := io.Copy(io.Discard, reader); err != nil {
-			config.Logger.Warn("[fire_completion_and_stop] drain stream error", "session_id", sessionID, "account", a.AccountID, "error", err)
+		for {
+			line, err := reader.ReadBytes('\n')
+			if len(line) > 0 {
+				observeStoppedSegmentStableLine(line, signalStable)
+			}
+			if err != nil {
+				if err != io.EOF {
+					config.Logger.Warn("[fire_completion_and_stop] drain stream error", "session_id", sessionID, "account", a.AccountID, "error", err)
+				}
+				break
+			}
 		}
 		close(drainDone)
 	}()
 
+	stableSeen := initialStableSeen
+	drainClosed := false
+	forceStop := false
 	if stopDelay > 0 {
-		select {
-		case <-time.After(stopDelay):
-		case <-ctx.Done():
-			config.Logger.Warn("[fire_completion_and_stop] context cancelled during stop delay", "session_id", sessionID, "account", a.AccountID, "error", ctx.Err())
-			return responseMessageID, ctx.Err()
+		stopTimer := time.NewTimer(stopDelay)
+		stableFallbackDelay := stopDelay + 4*time.Second
+		stableTimer := time.NewTimer(stableFallbackDelay)
+		stopDue := false
+		for !stopDue || (!stableSeen && !forceStop) {
+			select {
+			case <-stopTimer.C:
+				stopDue = true
+			case <-stableCh:
+				stableSeen = true
+			case <-drainDone:
+				drainClosed = true
+				if !stableSeen {
+					config.Logger.Warn("[fire_completion_and_stop] stream ended before stable response event", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
+				}
+				stopDue = true
+				forceStop = true
+			case <-stableTimer.C:
+				if !stableSeen {
+					config.Logger.Warn("[fire_completion_and_stop] stable response wait timed out before stop", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID, "wait", stableFallbackDelay)
+				}
+				stopDue = true
+				forceStop = true
+			case <-ctx.Done():
+				if !stopTimer.Stop() {
+					select {
+					case <-stopTimer.C:
+					default:
+					}
+				}
+				if !stableTimer.Stop() {
+					select {
+					case <-stableTimer.C:
+					default:
+					}
+				}
+				config.Logger.Warn("[fire_completion_and_stop] context cancelled during stop delay", "session_id", sessionID, "account", a.AccountID, "error", ctx.Err())
+				return responseMessageID, ctx.Err()
+			}
+		}
+		if !stopTimer.Stop() {
+			select {
+			case <-stopTimer.C:
+			default:
+			}
+		}
+		if !stableTimer.Stop() {
+			select {
+			case <-stableTimer.C:
+			default:
+			}
 		}
 	}
 
+	stopCalledAt := time.Now()
 	if err := c.StopStream(ctx, a, sessionID, responseMessageID); err != nil {
 		config.Logger.Warn("[fire_completion_and_stop] stop_stream failed", "session_id", sessionID, "message_id", responseMessageID, "error", err)
 		return 0, err
 	}
 
-	select {
-	case <-drainDone:
-	case <-time.After(10 * time.Second):
-		config.Logger.Warn("[fire_completion_and_stop] drain stream timed out, forcing close", "session_id", sessionID, "account", a.AccountID)
+	if !drainClosed {
+		select {
+		case <-drainDone:
+		case <-time.After(10 * time.Second):
+			config.Logger.Warn("[fire_completion_and_stop] drain stream timed out, forcing close", "session_id", sessionID, "account", a.AccountID)
+		}
 	}
 
-	config.Logger.Info("[fire_completion_and_stop] segment sent and stopped", "session_id", sessionID, "response_message_id", responseMessageID, "request_message_id", requestMessageID, "stop_delay", stopDelay, "account", a.AccountID)
+	config.Logger.Info("[fire_completion_and_stop] segment sent and stopped", "session_id", sessionID, "response_message_id", responseMessageID, "request_message_id", requestMessageID, "stop_delay", stopDelay, "drain_after_stop", time.Since(stopCalledAt), "stable_seen", stableSeen, "account", a.AccountID)
 	return responseMessageID, nil
+}
+
+func observeStoppedSegmentStableLine(line []byte, signalStable func()) {
+	trimmed := strings.TrimSpace(string(line))
+	if trimmed == "" || !strings.HasPrefix(trimmed, "data:") {
+		return
+	}
+	data := strings.TrimSpace(strings.TrimPrefix(trimmed, "data:"))
+	if data == "" || data == "[DONE]" {
+		return
+	}
+	var chunk map[string]any
+	if json.Unmarshal([]byte(data), &chunk) != nil {
+		return
+	}
+	if stoppedSegmentStableChunk(chunk) {
+		signalStable()
+	}
+}
+
+func stoppedSegmentStableChunk(chunk map[string]any) bool {
+	if p, _ := chunk["p"].(string); strings.HasPrefix(p, "response/") {
+		return true
+	}
+	if v, _ := chunk["v"].(map[string]any); v != nil {
+		if response, _ := v["response"].(map[string]any); response != nil {
+			return true
+		}
+	}
+	if message, _ := chunk["message"].(map[string]any); message != nil {
+		if response, _ := message["response"].(map[string]any); response != nil {
+			return true
+		}
+	}
+	return false
 }
 
 func extractResponseMessageID(chunk map[string]any, out *int) {

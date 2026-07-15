@@ -16,9 +16,10 @@ type ExpertPromptSegmentConfigReader interface {
 	ExpertPromptSegmentStopDelayMs() int
 }
 
-// shouldSegmentExpertPrompt returns segmented prompts when the resolved model
-// is expert, segmentation is enabled, and the finalized prompt exceeds the
-// configured rune threshold. Returns nil when segmentation is not applicable.
+// shouldSegmentExpertPrompt returns max-rune segmented prompts when the
+// resolved model is expert, segmentation is enabled, and the finalized prompt
+// exceeds the configured rune threshold. Returns nil when segmentation is not
+// applicable.
 func shouldSegmentExpertPrompt(stdReq promptcompat.StandardRequest, opts Options) []string {
 	segmentReader := opts.ExpertPromptSegment
 	if segmentReader == nil {
@@ -39,7 +40,7 @@ func shouldSegmentExpertPrompt(stdReq promptcompat.StandardRequest, opts Options
 	if len([]rune(promptText)) <= maxChars {
 		return nil
 	}
-	segments := prompt.SplitByRoleBoundary(promptText, maxChars)
+	segments := prompt.SplitByMaxRunes(promptText, maxChars)
 	if len(segments) <= 1 {
 		return nil
 	}

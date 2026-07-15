@@ -63,6 +63,43 @@ func TestExecuteStreamWithRetryUsesSharedRetryPayloadAndUsagePrompt(t *testing.T
 	}
 }
 
+func TestExecuteStreamWithRetryFallsBackToPayloadParentWhenAttemptHasNoMessageID(t *testing.T) {
+	ds := &fakeDeepSeekCaller{responses: []*http.Response{
+		sseHTTPResponse(http.StatusOK, `data: {"p":"response/content","v":"ok"}`),
+	}}
+	initial := sseHTTPResponse(http.StatusOK, `data: {"p":"response/thinking_content","v":"plan"}`)
+	payload := map[string]any{"prompt": "original prompt", "parent_message_id": 44}
+	attemptsSeen := 0
+
+	ExecuteStreamWithRetry(context.Background(), ds, &auth.RequestAuth{}, initial, payload, "pow", StreamRetryOptions{
+		Surface:      "test.stream",
+		Stream:       true,
+		RetryEnabled: true,
+		UsagePrompt:  "original prompt",
+	}, StreamRetryHooks{
+		ConsumeAttempt: func(resp *http.Response, allowDeferEmpty bool) (bool, bool) {
+			defer func() {
+				if err := resp.Body.Close(); err != nil {
+					t.Fatalf("close failed: %v", err)
+				}
+			}()
+			_, _ = io.ReadAll(resp.Body)
+			attemptsSeen++
+			return attemptsSeen == 2, attemptsSeen == 1 && allowDeferEmpty
+		},
+		ParentMessageID: func() int {
+			return 0
+		},
+	})
+
+	if len(ds.payloads) != 1 {
+		t.Fatalf("expected one retry completion call, got %d", len(ds.payloads))
+	}
+	if got := ds.payloads[0]["parent_message_id"]; got != 44 {
+		t.Fatalf("retry parent_message_id mismatch: %#v", got)
+	}
+}
+
 func TestExecuteStreamWithRetrySwitchesManagedAccountBeforeFinal429(t *testing.T) {
 	t.Setenv("DS2API_CONFIG_JSON", `{
 		"keys":["managed-key"],

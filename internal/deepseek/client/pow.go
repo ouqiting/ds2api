@@ -8,8 +8,6 @@ import (
 	"sync"
 	"time"
 
-	"ds2api/internal/auth"
-	dsprotocol "ds2api/internal/deepseek/protocol"
 	"ds2api/pow"
 )
 
@@ -98,46 +96,6 @@ func isFreshChallenge(challenge map[string]any) bool {
 		return false
 	}
 	return expireAt > time.Now().Unix()+powPrefetchFreshnessMargin
-}
-
-// fetchChallengeForPrefetch fetches a raw challenge from DeepSeek without solving.
-// It is used by the prefetch path. Errors are logged and swallowed.
-func (c *Client) fetchChallengeForPrefetch(ctx context.Context, a *auth.RequestAuth, targetPath string) (map[string]any, bool) {
-	clients := c.requestClientsForAuth(ctx, a)
-	headers := c.authHeaders(a.DeepSeekToken)
-	resp, status, err := c.postJSONWithStatus(ctx, clients.regular, clients.fallback, dsprotocol.DeepSeekCreatePowURL, headers, map[string]any{"target_path": targetPath})
-	if err != nil || status != 200 {
-		return nil, false
-	}
-	code, bizCode, _, _ := extractResponseStatus(resp)
-	if code != 0 || bizCode != 0 {
-		return nil, false
-	}
-	data, _ := resp["data"].(map[string]any)
-	bizData, _ := data["biz_data"].(map[string]any)
-	challenge, _ := bizData["challenge"].(map[string]any)
-	return challenge, challenge != nil
-}
-
-// prefetchPowChallenge asynchronously fetches the next PoW challenge for the
-// given account and target path, caching it for subsequent requests.
-func (c *Client) prefetchPowChallenge(a *auth.RequestAuth, targetPath string) {
-	if c == nil || a == nil || c.powCache == nil {
-		return
-	}
-	if cached, ok := c.powCache.get(a.AccountID, targetPath); ok && isFreshChallenge(cached) {
-		c.powCache.set(a.AccountID, targetPath, cached)
-		return
-	}
-	go func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-		defer cancel()
-		challenge, ok := c.fetchChallengeForPrefetch(ctx, a, targetPath)
-		if !ok {
-			return
-		}
-		c.powCache.set(a.AccountID, targetPath, challenge)
-	}()
 }
 
 func toFloat64(v any, d float64) float64 {

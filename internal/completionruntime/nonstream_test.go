@@ -270,6 +270,43 @@ func TestExecuteNonStreamWithRetryUsesParentMessageForEmptyRetry(t *testing.T) {
 	}
 }
 
+func TestExecuteNonStreamWithRetryFallsBackToPayloadParentWhenAttemptHasNoMessageID(t *testing.T) {
+	ds := &fakeDeepSeekCaller{responses: []*http.Response{
+		sseHTTPResponse(http.StatusOK, `data: {"p":"response/thinking_content","v":"plan"}`),
+		sseHTTPResponse(http.StatusOK, `data: {"response_message_id":45,"p":"response/content","v":"ok"}`),
+	}}
+	start := StartResult{
+		SessionID: "session-1",
+		Payload:   map[string]any{"prompt": "final prompt", "parent_message_id": 44},
+		Pow:       "pow",
+		Response:  ds.responses[0],
+		Request: promptcompat.StandardRequest{
+			Surface:         "test",
+			ResponseModel:   "deepseek-v4-flash",
+			PromptTokenText: "prompt",
+			FinalPrompt:     "final prompt",
+		},
+	}
+	ds.responses = ds.responses[1:]
+
+	result, outErr := ExecuteNonStreamStartedWithRetry(context.Background(), ds, &auth.RequestAuth{}, start, Options{RetryEnabled: true})
+	if outErr != nil {
+		t.Fatalf("unexpected output error: %#v", outErr)
+	}
+	if result.Attempts != 1 {
+		t.Fatalf("expected one retry, got %d", result.Attempts)
+	}
+	if len(ds.payloads) != 1 {
+		t.Fatalf("expected one retry completion call, got %d", len(ds.payloads))
+	}
+	if got := ds.payloads[0]["parent_message_id"]; got != 44 {
+		t.Fatalf("retry parent_message_id mismatch: %#v", got)
+	}
+	if result.Turn.Text != "ok" {
+		t.Fatalf("retry text mismatch: %q", result.Turn.Text)
+	}
+}
+
 func TestExecuteNonStreamWithRetryConvertsReferenceMarkers(t *testing.T) {
 	ds := &fakeDeepSeekCaller{responses: []*http.Response{sseHTTPResponse(
 		http.StatusOK,

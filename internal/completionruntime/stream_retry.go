@@ -111,13 +111,15 @@ func ExecuteStreamWithRetry(ctx context.Context, ds DeepSeekCaller, a *auth.Requ
 		if hooks.ParentMessageID != nil {
 			parentMessageID = hooks.ParentMessageID()
 		}
+		parentMessageID = retryParentMessageID(parentMessageID, currentPayload)
 		config.Logger.Info("[completion_runtime_empty_retry] attempting synthetic retry", "surface", surface, "stream", opts.Stream, "retry_attempt", attempts, "parent_message_id", parentMessageID)
 		retryPow, powErr := ds.GetPow(ctx, a, maxAttempts)
 		if powErr != nil {
 			config.Logger.Warn("[completion_runtime_empty_retry] retry PoW fetch failed, falling back to original PoW", "surface", surface, "stream", opts.Stream, "retry_attempt", attempts, "error", powErr)
 			retryPow = pow
 		}
-		nextResp, err := ds.CallCompletion(ctx, a, shared.ClonePayloadForEmptyOutputRetry(currentPayload, parentMessageID), retryPow, maxAttempts)
+		retryPayload := shared.ClonePayloadForEmptyOutputRetry(currentPayload, parentMessageID)
+		nextResp, err := ds.CallCompletion(ctx, a, retryPayload, retryPow, maxAttempts)
 		if err != nil {
 			if dsclient.IsMutedError(err) {
 				if canRetryOnAlternateAccount(ctx, a, &assistantturn.OutputError{Status: http.StatusForbidden, Code: "account_muted"}, opts.RetryEnabled, &accountSwitchAttempted) {
@@ -204,6 +206,7 @@ func ExecuteStreamWithRetry(ctx context.Context, ds DeepSeekCaller, a *auth.Requ
 			hooks.OnRetryPrompt(shared.UsagePromptWithEmptyOutputRetry(opts.UsagePrompt, attempts))
 		}
 		currentResp = nextResp
+		currentPayload = retryPayload
 	}
 }
 

@@ -190,7 +190,7 @@ func (s *Store) ExpertPromptSegmentMaxChars() int {
 	if s.cfg.ExpertPromptSegment.MaxChars > 0 {
 		return s.cfg.ExpertPromptSegment.MaxChars
 	}
-	return 90000
+	return 80000
 }
 
 func (s *Store) ExpertPromptSegmentStopDelayMs() int {

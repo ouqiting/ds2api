@@ -216,17 +216,6 @@ func (c *Client) GetPowForTarget(ctx context.Context, a *auth.RequestAuth, targe
 	lastFailureKind := FailureUnknown
 	lastFailureMessage := ""
 	for attempts < maxAttempts {
-		if c.powCache != nil {
-			if cachedChallenge, ok := c.powCache.get(a.AccountID, targetPath); ok {
-				answer, err := ComputePow(ctx, cachedChallenge)
-				if err != nil {
-					attempts++
-					continue
-				}
-				c.prefetchPowChallenge(a, targetPath)
-				return BuildPowHeader(cachedChallenge, answer)
-			}
-		}
 		headers := c.authHeaders(a.DeepSeekToken)
 		resp, status, err := c.postJSONWithStatus(ctx, clients.regular, clients.fallback, dsprotocol.DeepSeekCreatePowURL, headers, map[string]any{"target_path": targetPath})
 		if err != nil {
@@ -246,7 +235,6 @@ func (c *Client) GetPowForTarget(ctx context.Context, a *auth.RequestAuth, targe
 				attempts++
 				continue
 			}
-			c.prefetchPowChallenge(a, targetPath)
 			return BuildPowHeader(challenge, answer)
 		}
 		if ch := DetectCaptchaChallenge(resp); ch != nil {

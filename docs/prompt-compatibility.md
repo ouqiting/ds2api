@@ -370,12 +370,13 @@ Parameters: ...
 
 ### 9.1 expert 模式提示词分段（expert_prompt_segment）
 
-因为 expert（pro）模型不支持文件上传，`current_input_file` 拆分方式无法为 expert 模型缩短 live prompt。当 expert 模型的 `FinalPrompt` 超过字符数阈值时，兼容层会自动按角色边界（`<User>`:、`<Assistant>`:、`<System>`:、`<Tool>`:）把提示词切分为多段，通过 DeepSeek 多轮续发机制分段发送：前 N-1 段使用 `FireCompletionAndStop`（发送后捕获 `response_message_id` 再调用 `stop_stream` 终止生成），最后一段正常返回完整响应。该机制复用 `StartCompletionWithSegments` 编排，对等 `StartCompletion` 可无缝接入现有流式与非流式 `Execute*` 流程。
+因为 expert（pro）模型不支持文件上传，`current_input_file` 拆分方式无法为 expert 模型缩短 live prompt。当 expert 模型的 `FinalPrompt` 超过字符数阈值时，兼容层会按 rune 字数把提示词切分为多段，不再按 `<User>` / `<Assistant>` 等 role 标记边界切分；这些标记在 DeepSeek Web Chat 中只是普通文本。前 N-1 段使用 `FireCompletionAndStop`（发送后捕获 `response_message_id` 再调用 `stop_stream` 终止生成），最后一段正常返回完整响应。该机制复用 `StartCompletionWithSegments` 编排，对等 `StartCompletion` 可无缝接入现有流式与非流式 `Execute*` 流程。
 
 - `expert_prompt_segment` 默认开启；仅对 `model_type == "expert"` 的模型生效。
-- `expert_prompt_segment.max_chars`（默认 `90000`）是分段阈值，以 rune 字符数统计 `FinalPrompt`（含所有 role 标记和工具提示词）。不建议设置超过 90000。
+- `expert_prompt_segment.max_chars`（默认 `80000`）是分段阈值，以 rune 字符数统计 `FinalPrompt`（含所有 role 标记和工具提示词）。不建议设置超过 90000。
 - `expert_prompt_segment.stop_delay_ms`（默认 `1500`）是每段发送后等待多久再调用 `stop_stream` 的延迟。
-- 切分算法在角色标记边界贪心分组，保证每段 rune 数不超过 `max_chars`；当单个 block 自身超过阈值时在该 block 内部硬切。
+- `FireCompletionAndStop` 捕获 `response_message_id` 后会继续消费 SSE，等到真正的 response 事件（`response/*`、`v.response` 或 `message.response`）或短兜底等待后再调用 `stop_stream`；外层 segment settle 只保留短暂缓冲，避免固定等待过长。
+- 切分算法只按 rune 字数硬切，保证每段 rune 数不超过 `max_chars`，不会因为短 role 标记文本单独形成一段。
 - 账号切换重试时也会在新 session 上重新走分段发送，保证切换后仍完整提交所有段。
 - 分段发送返回的 `StartResult` 与 `StartCompletion` 完全一致，下游 `ExecuteNonStreamStartedWithRetry` / `ExecuteStreamWithRetry` 无缝接入。
 
@@ -385,7 +386,7 @@ Parameters: ...
   [internal/completionruntime/prompt_segment.go](../internal/completionruntime/prompt_segment.go)
 - 多段续发编排：
   [internal/completionruntime/segments.go](../internal/completionruntime/segments.go)
-- 角色边界切分算法：
+- 字数切分算法：
   [internal/prompt/segment.go](../internal/prompt/segment.go)
 - 配置访问器：
   [internal/config/store_accessors.go](../internal/config/store_accessors.go)
