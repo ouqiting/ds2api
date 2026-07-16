@@ -48,7 +48,7 @@ func (c Config) MarshalJSON() ([]byte, error) {
 	if c.ThinkingInjection.Enabled != nil || strings.TrimSpace(c.ThinkingInjection.Prompt) != "" {
 		m["thinking_injection"] = c.ThinkingInjection
 	}
-	if c.ExpertPromptSegment.Enabled != nil || c.ExpertPromptSegment.MaxChars != 0 || c.ExpertPromptSegment.StopDelayMs != 0 {
+	if c.ExpertPromptSegment.Enabled != nil || c.ExpertPromptSegment.MaxChars != 0 {
 		m["expert_prompt_segment"] = c.ExpertPromptSegment
 	}
 	if c.ElasticPool.Enabled || c.ElasticPool.PerPool || c.ElasticPool.GlobalCount != 0 || c.ElasticPool.DefaultCount != 0 || c.ElasticPool.NoToolsCount != 0 || c.ElasticPool.ToolsOnlyCount != 0 {
@@ -186,9 +186,8 @@ func (c Config) Clone() Config {
 			Prompt:  c.ThinkingInjection.Prompt,
 		},
 		ExpertPromptSegment: ExpertPromptSegmentConfig{
-			Enabled:     cloneBoolPtr(c.ExpertPromptSegment.Enabled),
-			MaxChars:    c.ExpertPromptSegment.MaxChars,
-			StopDelayMs: c.ExpertPromptSegment.StopDelayMs,
+			Enabled:  cloneBoolPtr(c.ExpertPromptSegment.Enabled),
+			MaxChars: c.ExpertPromptSegment.MaxChars,
 		},
 		ElasticPool:      c.ElasticPool,
 		Vercel:           c.Vercel,

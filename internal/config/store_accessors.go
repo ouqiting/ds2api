@@ -190,14 +190,5 @@ func (s *Store) ExpertPromptSegmentMaxChars() int {
 	if s.cfg.ExpertPromptSegment.MaxChars > 0 {
 		return s.cfg.ExpertPromptSegment.MaxChars
 	}
-	return 80000
-}
-
-func (s *Store) ExpertPromptSegmentStopDelayMs() int {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	if s.cfg.ExpertPromptSegment.StopDelayMs > 0 {
-		return s.cfg.ExpertPromptSegment.StopDelayMs
-	}
-	return 1500
+	return 160000
 }

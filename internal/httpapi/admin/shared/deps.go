@@ -42,7 +42,6 @@ type ConfigStore interface {
 	AutoDeleteSessions() bool
 	ExpertPromptSegmentEnabled() bool
 	ExpertPromptSegmentMaxChars() int
-	ExpertPromptSegmentStopDelayMs() int
 }
 
 type PoolController interface {

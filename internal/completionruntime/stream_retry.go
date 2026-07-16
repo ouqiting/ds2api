@@ -218,7 +218,7 @@ func startPayloadCompletionOnAlternateAccount(ctx context.Context, ds DeepSeekCa
 			RetryMaxAttempts:    opts.RetryMaxAttempts,
 			CurrentInputFile:    opts.CurrentInputFile,
 			ExpertPromptSegment: opts.ExpertPromptSegment,
-		}, segments, segmentStopDelay(Options{ExpertPromptSegment: opts.ExpertPromptSegment}))
+		}, segments)
 	}
 	sessionID, err := ds.CreateSession(ctx, a, maxAttempts)
 	if err != nil {

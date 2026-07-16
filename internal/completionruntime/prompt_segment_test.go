@@ -7,14 +7,12 @@ import (
 )
 
 type mockExpertSegmentConfig struct {
-	enabled     bool
-	maxChars    int
-	stopDelayMs int
+	enabled  bool
+	maxChars int
 }
 
-func (m mockExpertSegmentConfig) ExpertPromptSegmentEnabled() bool    { return m.enabled }
-func (m mockExpertSegmentConfig) ExpertPromptSegmentMaxChars() int    { return m.maxChars }
-func (m mockExpertSegmentConfig) ExpertPromptSegmentStopDelayMs() int { return m.stopDelayMs }
+func (m mockExpertSegmentConfig) ExpertPromptSegmentEnabled() bool { return m.enabled }
+func (m mockExpertSegmentConfig) ExpertPromptSegmentMaxChars() int { return m.maxChars }
 
 func TestShouldSegmentExpertPrompt_DisabledReturnsNil(t *testing.T) {
 	stdReq := promptcompat.StandardRequest{
@@ -72,14 +70,6 @@ func TestShouldSegmentExpertPrompt_NoReaderReturnsNil(t *testing.T) {
 	opts := Options{}
 	if segs := shouldSegmentExpertPrompt(stdReq, opts); segs != nil {
 		t.Fatalf("expected nil when no reader provided, got %d segments", len(segs))
-	}
-}
-
-func TestSegmentStopDelay(t *testing.T) {
-	opts := Options{ExpertPromptSegment: mockExpertSegmentConfig{stopDelayMs: 3000}}
-	d := segmentStopDelay(opts)
-	if d.Milliseconds() != 3000 {
-		t.Fatalf("expected 3000ms, got %dms", d.Milliseconds())
 	}
 }
 

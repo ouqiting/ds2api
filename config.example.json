@@ -55,9 +55,8 @@
     "prompt": ""
   },
   "expert_prompt_segment": {
-    "enabled": false,
-    "max_chars": 120000,
-    "stop_delay_ms": 2000
+    "enabled": true,
+    "max_chars": 160000
   },
   "embeddings": {
     "provider": "deterministic"

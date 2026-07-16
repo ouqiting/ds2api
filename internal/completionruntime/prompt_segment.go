@@ -1,8 +1,6 @@
 package completionruntime
 
 import (
-	"time"
-
 	"ds2api/internal/config"
 	"ds2api/internal/prompt"
 	"ds2api/internal/promptcompat"
@@ -13,7 +11,6 @@ import (
 type ExpertPromptSegmentConfigReader interface {
 	ExpertPromptSegmentEnabled() bool
 	ExpertPromptSegmentMaxChars() int
-	ExpertPromptSegmentStopDelayMs() int
 }
 
 // shouldSegmentExpertPrompt returns max-rune segmented prompts when the
@@ -45,15 +42,4 @@ func shouldSegmentExpertPrompt(stdReq promptcompat.StandardRequest, opts Options
 		return nil
 	}
 	return segments
-}
-
-func segmentStopDelay(opts Options) time.Duration {
-	if opts.ExpertPromptSegment == nil {
-		return 0
-	}
-	ms := opts.ExpertPromptSegment.ExpertPromptSegmentStopDelayMs()
-	if ms <= 0 {
-		return 0
-	}
-	return time.Duration(ms) * time.Millisecond
 }

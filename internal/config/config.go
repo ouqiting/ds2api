@@ -188,9 +188,8 @@ type ThinkingInjectionConfig struct {
 }
 
 type ExpertPromptSegmentConfig struct {
-	Enabled     *bool `json:"enabled,omitempty"`
-	MaxChars    int   `json:"max_chars,omitempty"`
-	StopDelayMs int   `json:"stop_delay_ms,omitempty"`
+	Enabled  *bool `json:"enabled,omitempty"`
+	MaxChars int   `json:"max_chars,omitempty"`
 }
 
 // ElasticPoolConfig 控制弹性号池行为。

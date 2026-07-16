@@ -241,7 +241,7 @@ func (m *vercelReleaseAutoDeleteDSStub) StopStream(_ context.Context, _ *auth.Re
 	return nil
 }
 
-func (m *vercelReleaseAutoDeleteDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m *vercelReleaseAutoDeleteDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

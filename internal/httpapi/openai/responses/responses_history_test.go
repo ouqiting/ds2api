@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -47,7 +46,7 @@ func (d *responsesHistoryDS) StopStream(_ context.Context, _ *auth.RequestAuth, 
 	return nil
 }
 
-func (d *responsesHistoryDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (d *responsesHistoryDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

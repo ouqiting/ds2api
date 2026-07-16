@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -21,12 +20,11 @@ import (
 
 type testGeminiConfig struct{}
 
-func (testGeminiConfig) ModelAliases() map[string]string     { return nil }
-func (testGeminiConfig) CurrentInputFileEnabled() bool       { return true }
-func (testGeminiConfig) CurrentInputFileMinChars() int       { return 0 }
-func (testGeminiConfig) ExpertPromptSegmentEnabled() bool    { return false }
-func (testGeminiConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
-func (testGeminiConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
+func (testGeminiConfig) ModelAliases() map[string]string  { return nil }
+func (testGeminiConfig) CurrentInputFileEnabled() bool    { return true }
+func (testGeminiConfig) CurrentInputFileMinChars() int    { return 0 }
+func (testGeminiConfig) ExpertPromptSegmentEnabled() bool { return false }
+func (testGeminiConfig) ExpertPromptSegmentMaxChars() int { return 120000 }
 
 type testGeminiAuth struct {
 	a   *auth.RequestAuth
@@ -95,7 +93,7 @@ func (m *testGeminiDS) StopStream(_ context.Context, _ *auth.RequestAuth, _ stri
 	return nil
 }
 
-func (m *testGeminiDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m *testGeminiDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

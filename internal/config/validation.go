@@ -130,11 +130,6 @@ func ValidateExpertPromptSegmentConfig(cfg ExpertPromptSegmentConfig) error {
 			return err
 		}
 	}
-	if cfg.StopDelayMs != 0 {
-		if err := ValidateIntRange("expert_prompt_segment.stop_delay_ms", cfg.StopDelayMs, 0, 60000, true); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

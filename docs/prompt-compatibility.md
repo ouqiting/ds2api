@@ -373,19 +373,20 @@ Parameters: ...
 因为 expert（pro）模型不支持文件上传，`current_input_file` 拆分方式无法为 expert 模型缩短 live prompt。当 expert 模型的 `FinalPrompt` 超过字符数阈值时，兼容层会按 rune 字数把提示词切分为多段，不再按 `<User>` / `<Assistant>` 等 role 标记边界切分；这些标记在 DeepSeek Web Chat 中只是普通文本。前 N-1 段使用 `FireCompletionAndStop`（发送后捕获 `response_message_id` 再调用 `stop_stream` 终止生成），最后一段正常返回完整响应。该机制复用 `StartCompletionWithSegments` 编排，对等 `StartCompletion` 可无缝接入现有流式与非流式 `Execute*` 流程。
 
 - `expert_prompt_segment` 默认开启；仅对 `model_type == "expert"` 的模型生效。
-- `expert_prompt_segment.max_chars`（默认 `80000`）是分段阈值，以 rune 字符数统计 `FinalPrompt`（含所有 role 标记和工具提示词）。不建议设置超过 90000。
-- `expert_prompt_segment.stop_delay_ms`（默认 `1500`）是每段发送后等待多久再调用 `stop_stream` 的延迟。
-- `FireCompletionAndStop` 捕获 `response_message_id` 后会继续消费 SSE，等到真正的 response 事件（`response/*`、`v.response` 或 `message.response`）或短兜底等待后再调用 `stop_stream`；外层 segment settle 只保留短暂缓冲，避免固定等待过长。
+- `expert_prompt_segment.max_chars`（默认 `160000`）是分段阈值，以 rune 字符数统计 `FinalPrompt`（含所有 role 标记和工具提示词）。
+- `FireCompletionAndStop` 捕获 `response_message_id` 后会继续消费 SSE，等待首批实际内容（`response/content`、`response/thinking_content` 或 `response/fragments`）到达后立即调用 `stop_stream`；若内容等待超时则直接报错终止后续段发送，不再兜底停止。`stop_stream` 后等待上游 `event: close` 确认消息已落库，再短暂 settle 后发送下一段，避免下一段因上游尚未提交而失败。
 - 切分算法只按 rune 字数硬切，保证每段 rune 数不超过 `max_chars`，不会因为短 role 标记文本单独形成一段。
 - 账号切换重试时也会在新 session 上重新走分段发送，保证切换后仍完整提交所有段。
 - 分段发送返回的 `StartResult` 与 `StartCompletion` 完全一致，下游 `ExecuteNonStreamStartedWithRetry` / `ExecuteStreamWithRetry` 无缝接入。
 
 相关实现：
 
-- 分段判断与延迟计算：
+- 分段判断：
   [internal/completionruntime/prompt_segment.go](../internal/completionruntime/prompt_segment.go)
 - 多段续发编排：
   [internal/completionruntime/segments.go](../internal/completionruntime/segments.go)
+- 内容检测与停止：
+  [internal/deepseek/client/client_stop_stream.go](../internal/deepseek/client/client_stop_stream.go)
 - 字数切分算法：
   [internal/prompt/segment.go](../internal/prompt/segment.go)
 - 配置访问器：

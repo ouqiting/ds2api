@@ -8,7 +8,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
@@ -67,7 +66,7 @@ func (m streamStatusDSStub) StopStream(_ context.Context, _ *auth.RequestAuth, _
 	return nil
 }
 
-func (m streamStatusDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m streamStatusDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 
@@ -113,7 +112,7 @@ func (m *streamStatusDSSeqStub) StopStream(_ context.Context, _ *auth.RequestAut
 	return nil
 }
 
-func (m *streamStatusDSSeqStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m *streamStatusDSSeqStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

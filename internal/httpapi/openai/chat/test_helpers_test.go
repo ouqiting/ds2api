@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"strings"
-	"time"
 
 	"ds2api/internal/auth"
 	dsclient "ds2api/internal/deepseek/client"
@@ -47,10 +46,9 @@ func (m mockOpenAIConfig) ThinkingInjectionEnabled() bool {
 	}
 	return *m.thinkingInjection
 }
-func (m mockOpenAIConfig) ThinkingInjectionPrompt() string   { return m.thinkingPrompt }
-func (mockOpenAIConfig) ExpertPromptSegmentEnabled() bool    { return false }
-func (mockOpenAIConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
-func (mockOpenAIConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
+func (m mockOpenAIConfig) ThinkingInjectionPrompt() string { return m.thinkingPrompt }
+func (mockOpenAIConfig) ExpertPromptSegmentEnabled() bool  { return false }
+func (mockOpenAIConfig) ExpertPromptSegmentMaxChars() int  { return 120000 }
 
 type streamStatusAuthStub struct{}
 
@@ -119,7 +117,7 @@ func (m streamStatusDSStub) StopStream(_ context.Context, _ *auth.RequestAuth, _
 	return nil
 }
 
-func (m streamStatusDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m streamStatusDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 
@@ -197,7 +195,7 @@ func (m *inlineUploadDSStub) StopStream(_ context.Context, _ *auth.RequestAuth, 
 	return nil
 }
 
-func (m *inlineUploadDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m *inlineUploadDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

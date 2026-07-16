@@ -8,7 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"ds2api/internal/auth"
 	"ds2api/internal/chathistory"
@@ -21,12 +20,11 @@ type claudeHistoryConfig struct {
 	aliases map[string]string
 }
 
-func (m claudeHistoryConfig) ModelAliases() map[string]string   { return m.aliases }
-func (claudeHistoryConfig) CurrentInputFileEnabled() bool       { return false }
-func (claudeHistoryConfig) CurrentInputFileMinChars() int       { return 0 }
-func (claudeHistoryConfig) ExpertPromptSegmentEnabled() bool    { return false }
-func (claudeHistoryConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
-func (claudeHistoryConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
+func (m claudeHistoryConfig) ModelAliases() map[string]string { return m.aliases }
+func (claudeHistoryConfig) CurrentInputFileEnabled() bool     { return false }
+func (claudeHistoryConfig) CurrentInputFileMinChars() int     { return 0 }
+func (claudeHistoryConfig) ExpertPromptSegmentEnabled() bool  { return false }
+func (claudeHistoryConfig) ExpertPromptSegmentMaxChars() int  { return 120000 }
 
 func (claudeCurrentInputAuth) Determine(*http.Request) (*auth.RequestAuth, error) {
 	return &auth.RequestAuth{
@@ -121,7 +119,7 @@ func (d *claudeCurrentInputDS) StopStream(_ context.Context, _ *auth.RequestAuth
 	return nil
 }
 
-func (d *claudeCurrentInputDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (d *claudeCurrentInputDS) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

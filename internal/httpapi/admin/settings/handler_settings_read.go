@@ -40,9 +40,8 @@ func (h *Handler) getSettings(w http.ResponseWriter, _ *http.Request) {
 			"default_prompt": promptcompat.DefaultThinkingInjectionPrompt,
 		},
 		"expert_prompt_segment": map[string]any{
-			"enabled":       h.Store.ExpertPromptSegmentEnabled(),
-			"max_chars":     h.Store.ExpertPromptSegmentMaxChars(),
-			"stop_delay_ms": h.Store.ExpertPromptSegmentStopDelayMs(),
+			"enabled":   h.Store.ExpertPromptSegmentEnabled(),
+			"max_chars": h.Store.ExpertPromptSegmentMaxChars(),
 		},
 		"model_aliases":     snap.ModelAliases,
 		"env_backed":        h.Store.IsEnvBacked(),

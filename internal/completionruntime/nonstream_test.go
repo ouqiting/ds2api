@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	"ds2api/internal/account"
 	"ds2api/internal/auth"
@@ -65,7 +64,7 @@ func (f *fakeDeepSeekCaller) StopStream(_ context.Context, _ *auth.RequestAuth, 
 	return nil
 }
 
-func (f *fakeDeepSeekCaller) FireCompletionAndStop(_ context.Context, a *auth.RequestAuth, payload map[string]any, _ string, _ time.Duration) (int, error) {
+func (f *fakeDeepSeekCaller) FireCompletionAndStop(_ context.Context, a *auth.RequestAuth, payload map[string]any, _ string) (int, error) {
 	f.payloads = append(f.payloads, payload)
 	if a != nil {
 		f.completionAccounts = append(f.completionAccounts, a.AccountID)

@@ -6,7 +6,6 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	"ds2api/internal/auth"
 	dsclient "ds2api/internal/deepseek/client"
@@ -40,7 +39,7 @@ func (m *autoDeleteModeDSStub) StopStream(_ context.Context, _ *auth.RequestAuth
 	return nil
 }
 
-func (m *autoDeleteModeDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ time.Duration) (int, error) {
+func (m *autoDeleteModeDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
 	return 0, nil
 }
 

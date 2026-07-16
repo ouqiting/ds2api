@@ -14,6 +14,13 @@ import (
 
 	"ds2api/internal/auth"
 	"ds2api/internal/config"
+	"ds2api/internal/sse"
+)
+
+const (
+	segmentContentWaitTimeout = 20 * time.Second
+	segmentDrainTimeout       = 5 * time.Second
+	segmentSettleDelay        = 1 * time.Second
 )
 
 func (c *Client) StopStream(ctx context.Context, a *auth.RequestAuth, sessionID string, messageID int) error {
@@ -40,7 +47,7 @@ func (c *Client) StopStream(ctx context.Context, a *auth.RequestAuth, sessionID 
 	return nil
 }
 
-func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string, stopDelay time.Duration) (int, error) {
+func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth, payload map[string]any, powResp string) (int, error) {
 	sessionID, _ := payload["chat_session_id"].(string)
 	clients := c.requestClientsForAuth(ctx, a)
 	headers := c.authHeaders(a.DeepSeekToken)
@@ -80,7 +87,8 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 
 	responseMessageID := 0
 	requestMessageID := 0
-	initialStableSeen := false
+	hadContent := false
+	streamEnded := false
 	var ssePreview strings.Builder
 	reader := bufio.NewReaderSize(resp.Body, 64*1024)
 	for {
@@ -109,8 +117,11 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 							requestMessageID = id
 						}
 						extractResponseMessageID(chunk, &responseMessageID)
-						if stoppedSegmentStableChunk(chunk) {
-							initialStableSeen = true
+						if !hadContent {
+							parts, _, _, _ := sse.ParseSSEChunkForContentDetailed(chunk, true, "text")
+							if len(parts) > 0 {
+								hadContent = true
+							}
 						}
 					}
 				}
@@ -121,6 +132,7 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 		}
 		if readErr != nil {
 			if readErr == io.EOF {
+				streamEnded = true
 				break
 			}
 			config.Logger.Warn("[fire_completion_and_stop] SSE scan error", "session_id", sessionID, "account", a.AccountID, "error", readErr)
@@ -148,21 +160,34 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 		config.Logger.Warn("[fire_completion_and_stop] response_message_id not received before stream ended", "session_id", sessionID, "account", a.AccountID, "parent_message_id", payload["parent_message_id"], "request_message_id", requestMessageID, "sse_preview", previewStr)
 		return 0, errors.New("response_message_id not received before stream ended")
 	}
-	config.Logger.Info("[fire_completion_and_stop] captured ids", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
+	config.Logger.Info("[fire_completion_and_stop] captured ids", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID, "had_content", hadContent)
 
-	stableCh := make(chan struct{}, 1)
-	signalStable := func() {
-		select {
-		case stableCh <- struct{}{}:
-		default:
-		}
+	if streamEnded && !hadContent {
+		config.Logger.Info("[fire_completion_and_stop] stream ended before content, no stop needed", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
+		return responseMessageID, nil
 	}
+
+	contentCh := make(chan struct{}, 1)
 	drainDone := make(chan struct{})
+	closeCh := make(chan struct{})
 	go func() {
+		closedSignaled := false
 		for {
 			line, err := reader.ReadBytes('\n')
 			if len(line) > 0 {
-				observeStoppedSegmentStableLine(line, signalStable)
+				if lineHasContent(line) {
+					select {
+					case contentCh <- struct{}{}:
+					default:
+					}
+				}
+				if !closedSignaled && lineIsEventClose(line) {
+					closedSignaled = true
+					select {
+					case closeCh <- struct{}{}:
+					default:
+					}
+				}
 			}
 			if err != nil {
 				if err != io.EOF {
@@ -174,115 +199,63 @@ func (c *Client) FireCompletionAndStop(ctx context.Context, a *auth.RequestAuth,
 		close(drainDone)
 	}()
 
-	stableSeen := initialStableSeen
-	drainClosed := false
-	forceStop := false
-	if stopDelay > 0 {
-		stopTimer := time.NewTimer(stopDelay)
-		stableFallbackDelay := stopDelay + 4*time.Second
-		stableTimer := time.NewTimer(stableFallbackDelay)
-		stopDue := false
-		for !stopDue || (!stableSeen && !forceStop) {
-			select {
-			case <-stopTimer.C:
-				stopDue = true
-			case <-stableCh:
-				stableSeen = true
-			case <-drainDone:
-				drainClosed = true
-				if !stableSeen {
-					config.Logger.Warn("[fire_completion_and_stop] stream ended before stable response event", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
-				}
-				stopDue = true
-				forceStop = true
-			case <-stableTimer.C:
-				if !stableSeen {
-					config.Logger.Warn("[fire_completion_and_stop] stable response wait timed out before stop", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID, "wait", stableFallbackDelay)
-				}
-				stopDue = true
-				forceStop = true
-			case <-ctx.Done():
-				if !stopTimer.Stop() {
-					select {
-					case <-stopTimer.C:
-					default:
-					}
-				}
-				if !stableTimer.Stop() {
-					select {
-					case <-stableTimer.C:
-					default:
-					}
-				}
-				config.Logger.Warn("[fire_completion_and_stop] context cancelled during stop delay", "session_id", sessionID, "account", a.AccountID, "error", ctx.Err())
-				return responseMessageID, ctx.Err()
-			}
-		}
-		if !stopTimer.Stop() {
-			select {
-			case <-stopTimer.C:
-			default:
-			}
-		}
-		if !stableTimer.Stop() {
-			select {
-			case <-stableTimer.C:
-			default:
-			}
+	if !hadContent {
+		select {
+		case <-contentCh:
+			hadContent = true
+		case <-drainDone:
+			config.Logger.Info("[fire_completion_and_stop] stream ended before content, no stop needed", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
+			return responseMessageID, nil
+		case <-time.After(segmentContentWaitTimeout):
+			config.Logger.Warn("[fire_completion_and_stop] content wait timed out, aborting segment", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID, "wait", segmentContentWaitTimeout)
+			return 0, fmt.Errorf("segment content wait timed out after %s (session=%s, response_message_id=%d)", segmentContentWaitTimeout, sessionID, responseMessageID)
+		case <-ctx.Done():
+			config.Logger.Warn("[fire_completion_and_stop] context cancelled while waiting for content", "session_id", sessionID, "account", a.AccountID, "error", ctx.Err())
+			return responseMessageID, ctx.Err()
 		}
 	}
 
 	stopCalledAt := time.Now()
+	config.Logger.Info("[fire_completion_and_stop] content detected, calling stop_stream", "session_id", sessionID, "account", a.AccountID, "request_message_id", requestMessageID, "response_message_id", responseMessageID)
 	if err := c.StopStream(ctx, a, sessionID, responseMessageID); err != nil {
 		config.Logger.Warn("[fire_completion_and_stop] stop_stream failed", "session_id", sessionID, "message_id", responseMessageID, "error", err)
 		return 0, err
 	}
 
-	if !drainClosed {
-		select {
-		case <-drainDone:
-		case <-time.After(10 * time.Second):
-			config.Logger.Warn("[fire_completion_and_stop] drain stream timed out, forcing close", "session_id", sessionID, "account", a.AccountID)
-		}
+	// After stop, wait for upstream's event: close confirmation (message committed)
+	// or drain completion, with a timeout fallback.
+	select {
+	case <-closeCh:
+		config.Logger.Info("[fire_completion_and_stop] upstream close confirmed", "session_id", sessionID, "account", a.AccountID, "response_message_id", responseMessageID)
+	case <-drainDone:
+		config.Logger.Info("[fire_completion_and_stop] drain completed", "session_id", sessionID, "account", a.AccountID, "response_message_id", responseMessageID)
+	case <-time.After(segmentDrainTimeout):
+		config.Logger.Warn("[fire_completion_and_stop] drain stream timed out, forcing close", "session_id", sessionID, "account", a.AccountID)
 	}
 
-	config.Logger.Info("[fire_completion_and_stop] segment sent and stopped", "session_id", sessionID, "response_message_id", responseMessageID, "request_message_id", requestMessageID, "stop_delay", stopDelay, "drain_after_stop", time.Since(stopCalledAt), "stable_seen", stableSeen, "account", a.AccountID)
+	// Brief settle after upstream close confirmation to let the session
+	// finish committing the previous message before sending the next segment.
+	select {
+	case <-time.After(segmentSettleDelay):
+	case <-ctx.Done():
+		config.Logger.Warn("[fire_completion_and_stop] context cancelled during settle delay", "session_id", sessionID, "account", a.AccountID, "error", ctx.Err())
+		return responseMessageID, ctx.Err()
+	}
+
+	config.Logger.Info("[fire_completion_and_stop] segment sent and stopped", "session_id", sessionID, "response_message_id", responseMessageID, "request_message_id", requestMessageID, "drain_after_stop", time.Since(stopCalledAt), "had_content", hadContent, "account", a.AccountID)
 	return responseMessageID, nil
 }
 
-func observeStoppedSegmentStableLine(line []byte, signalStable func()) {
-	trimmed := strings.TrimSpace(string(line))
-	if trimmed == "" || !strings.HasPrefix(trimmed, "data:") {
-		return
+func lineHasContent(line []byte) bool {
+	result := sse.ParseDeepSeekContentLine(line, true, "text")
+	if !result.Parsed || result.Stop {
+		return false
 	}
-	data := strings.TrimSpace(strings.TrimPrefix(trimmed, "data:"))
-	if data == "" || data == "[DONE]" {
-		return
-	}
-	var chunk map[string]any
-	if json.Unmarshal([]byte(data), &chunk) != nil {
-		return
-	}
-	if stoppedSegmentStableChunk(chunk) {
-		signalStable()
-	}
+	return len(result.Parts) > 0 || len(result.ToolDetectionThinkingParts) > 0
 }
 
-func stoppedSegmentStableChunk(chunk map[string]any) bool {
-	if p, _ := chunk["p"].(string); strings.HasPrefix(p, "response/") {
-		return true
-	}
-	if v, _ := chunk["v"].(map[string]any); v != nil {
-		if response, _ := v["response"].(map[string]any); response != nil {
-			return true
-		}
-	}
-	if message, _ := chunk["message"].(map[string]any); message != nil {
-		if response, _ := message["response"].(map[string]any); response != nil {
-			return true
-		}
-	}
-	return false
+func lineIsEventClose(line []byte) bool {
+	return strings.HasPrefix(strings.TrimSpace(string(line)), "event: close")
 }
 
 func extractResponseMessageID(chunk map[string]any, out *int) {

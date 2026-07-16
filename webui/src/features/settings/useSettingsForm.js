@@ -18,7 +18,7 @@ const DEFAULT_FORM = {
     auto_delete: { mode: 'none' },
     current_input_file: { enabled: false, min_chars: 0 },
     thinking_injection: { enabled: false, prompt: '', default_prompt: '' },
-    expert_prompt_segment: { enabled: true, max_chars: 80000, stop_delay_ms: 1500 },
+    expert_prompt_segment: { enabled: true, max_chars: 160000 },
     model_aliases_text: '{}',
 }
 
@@ -80,8 +80,7 @@ function fromServerForm(data) {
         },
         expert_prompt_segment: {
             enabled: data.expert_prompt_segment?.enabled ?? true,
-            max_chars: Number(data.expert_prompt_segment?.max_chars ?? 80000),
-            stop_delay_ms: Number(data.expert_prompt_segment?.stop_delay_ms ?? 1500),
+            max_chars: Number(data.expert_prompt_segment?.max_chars ?? 160000),
         },
         model_aliases_text: JSON.stringify(data.model_aliases || {}, null, 2),
     }
@@ -110,8 +109,7 @@ function toServerPayload(form) {
         },
         expert_prompt_segment: {
             enabled: Boolean(form.expert_prompt_segment?.enabled ?? true),
-            max_chars: Number(form.expert_prompt_segment?.max_chars ?? 80000),
-            stop_delay_ms: Number(form.expert_prompt_segment?.stop_delay_ms ?? 1500),
+            max_chars: Number(form.expert_prompt_segment?.max_chars ?? 160000),
         },
     }
 }

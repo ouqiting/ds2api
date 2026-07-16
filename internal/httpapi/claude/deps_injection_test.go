@@ -6,12 +6,11 @@ type mockClaudeConfig struct {
 	aliases map[string]string
 }
 
-func (m mockClaudeConfig) ModelAliases() map[string]string   { return m.aliases }
-func (mockClaudeConfig) CurrentInputFileEnabled() bool       { return true }
-func (mockClaudeConfig) CurrentInputFileMinChars() int       { return 0 }
-func (mockClaudeConfig) ExpertPromptSegmentEnabled() bool    { return false }
-func (mockClaudeConfig) ExpertPromptSegmentMaxChars() int    { return 120000 }
-func (mockClaudeConfig) ExpertPromptSegmentStopDelayMs() int { return 2000 }
+func (m mockClaudeConfig) ModelAliases() map[string]string { return m.aliases }
+func (mockClaudeConfig) CurrentInputFileEnabled() bool     { return true }
+func (mockClaudeConfig) CurrentInputFileMinChars() int     { return 0 }
+func (mockClaudeConfig) ExpertPromptSegmentEnabled() bool  { return false }
+func (mockClaudeConfig) ExpertPromptSegmentMaxChars() int  { return 120000 }
 
 func TestNormalizeClaudeRequestUsesGlobalAliasMapping(t *testing.T) {
 	req := map[string]any{

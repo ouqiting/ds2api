@@ -34,7 +34,6 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	thinkingInjectionPromptSet := hasNestedSettingsKey(req, "thinking_injection", "prompt")
 	expertPromptSegEnabledSet := hasNestedSettingsKey(req, "expert_prompt_segment", "enabled")
 	expertPromptSegMaxCharsSet := hasNestedSettingsKey(req, "expert_prompt_segment", "max_chars")
-	expertPromptSegStopDelayMsSet := hasNestedSettingsKey(req, "expert_prompt_segment", "stop_delay_ms")
 
 	if err := h.Store.Update(func(c *config.Config) error {
 		if adminCfg != nil {
@@ -88,9 +87,6 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 			}
 			if expertPromptSegMaxCharsSet {
 				c.ExpertPromptSegment.MaxChars = expertPromptSegCfg.MaxChars
-			}
-			if expertPromptSegStopDelayMsSet {
-				c.ExpertPromptSegment.StopDelayMs = expertPromptSegCfg.StopDelayMs
 			}
 		}
 		if aliasMap != nil {

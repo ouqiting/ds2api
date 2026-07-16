@@ -54,6 +54,7 @@ type streamState struct {
 	finished          bool
 	err               error
 	currentType       string
+	hadContent        bool
 }
 
 type streamOutcome struct {
@@ -66,19 +67,18 @@ var (
 )
 
 const (
-	maxBodyDisplay   = 8000
-	streamEndTimeout = 15 * time.Second
-	idWaitTimeout    = 30 * time.Second
+	maxBodyDisplay     = 8000
+	streamEndTimeout   = 15 * time.Second
+	idWaitTimeout      = 30 * time.Second
+	contentWaitTimeout = 30 * time.Second
 )
 
 func main() {
 	var email, mobile, password, modelType string
-	var stopDelay time.Duration
 	flag.StringVar(&email, "email", "", "账号邮箱")
 	flag.StringVar(&mobile, "mobile", "", "账号手机号")
 	flag.StringVar(&password, "password", "", "账号密码")
 	flag.StringVar(&modelType, "model-type", "expert", "模型类型 (default / expert / vision)")
-	flag.DurationVar(&stopDelay, "stop-delay", 2*time.Second, "拿到 response_message_id 后等待多久再调 stop_stream")
 	flag.Parse()
 
 	if password == "" || (email == "" && mobile == "") {
@@ -89,7 +89,6 @@ func main() {
 		fmt.Fprintln(os.Stderr, "    -email xxx@example.com -password xxx")
 		fmt.Fprintln(os.Stderr, "")
 		fmt.Fprintln(os.Stderr, "  可选参数:")
-		fmt.Fprintln(os.Stderr, "    -stop-delay 2s    拿到 response_message_id 后等待多久再停止")
 		fmt.Fprintln(os.Stderr, "    -model-type expert  default / expert / vision")
 		os.Exit(1)
 	}
@@ -111,17 +110,17 @@ func main() {
 		os.Exit(1)
 	}
 
-	runStopContinueTest(ctx, token, modelType, stopDelay)
+	runStopContinueTest(ctx, token, modelType)
 }
 
-func runStopContinueTest(ctx context.Context, token, modelType string, stopDelay time.Duration) {
+func runStopContinueTest(ctx context.Context, token, modelType string) {
 	part1 := defaultPromptPart1
 	part2 := defaultPromptPart2
 	verify := defaultPromptVerify
 
 	fmt.Printf("\n========== 测试流程：发第一段 -> 停止 -> 发第二段 -> 验证 ==========\n")
 	fmt.Printf("  模型类型: %s\n", modelType)
-	fmt.Printf("  停止延迟: %s\n", stopDelay)
+	fmt.Printf("  停止策略: 收到首批流式内容(思考或回复文本)后立即停止\n")
 	fmt.Printf("  第一段 prompt: %s\n", part1)
 	fmt.Printf("  第二段 prompt: %s\n", part2)
 	fmt.Printf("  验证 prompt: %s\n", verify)
@@ -144,9 +143,9 @@ func runStopContinueTest(ctx context.Context, token, modelType string, stopDelay
 		os.Exit(1)
 	}
 
-	// Step 3: 发送第一段，流式读取并捕获 response_message_id，稍后停止
+	// Step 3: 发送第一段，流式读取并捕获 response_message_id，收到首批内容后停止
 	fmt.Printf("\n[Step 3] 发送第一段 (parent_message_id=nil)\n")
-	out1, r3 := doCompletionStreamWithStop(ctx, token, sessionID, pow1, part1, modelType, nil, stopDelay)
+	out1, r3 := doCompletionStreamWithStop(ctx, token, sessionID, pow1, part1, modelType, nil, true)
 	printStep(r3)
 	if !r3.Success {
 		os.Exit(1)
@@ -172,7 +171,7 @@ func runStopContinueTest(ctx context.Context, token, modelType string, stopDelay
 
 	// Step 5: 发送第二段，复用 session，parent_message_id = respID1
 	fmt.Printf("\n[Step 5] 发送第二段 (parent_message_id=%d)\n", respID1)
-	out2, r5 := doCompletionStreamWithStop(ctx, token, sessionID, pow2, part2, modelType, &respID1, 0)
+	out2, r5 := doCompletionStreamWithStop(ctx, token, sessionID, pow2, part2, modelType, &respID1, false)
 	printStep(r5)
 	if !r5.Success {
 		os.Exit(1)
@@ -196,7 +195,7 @@ func runStopContinueTest(ctx context.Context, token, modelType string, stopDelay
 
 	// Step 7: 发送验证消息，复用 session，parent_message_id = respID2
 	fmt.Printf("\n[Step 7] 发送验证消息 (parent_message_id=%d)\n", respID2)
-	out3, r7 := doCompletionStreamWithStop(ctx, token, sessionID, pow3, verify, modelType, &respID2, 0)
+	out3, r7 := doCompletionStreamWithStop(ctx, token, sessionID, pow3, verify, modelType, &respID2, false)
 	printStep(r7)
 	if !r7.Success {
 		os.Exit(1)
@@ -226,9 +225,11 @@ func runStopContinueTest(ctx context.Context, token, modelType string, stopDelay
 }
 
 // doCompletionStreamWithStop 发起 completion 流式请求，边读边捕获 response_message_id。
-// 当 stopAfter > 0 时，捕获到 response_message_id 后等待 stopAfter 再调用 stop_stream。
+// 当 shouldStop=true 时，捕获到 response_message_id 后，等待首批流式内容(思考或回复文本)到达，
+// 到达后立即调用 stop_stream；若 contentWaitTimeout 内仍未收到内容则兜底强制停止。
+// 这样可避免固定等待带来的网络环境差异，并保证中断时有真实内容被丢弃。
 // 当 parentMessageID != nil 时，设置 parent_message_id（用于复用 session 续发）。
-func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader, prompt, modelType string, parentMessageID *int, stopAfter time.Duration) (streamOutcome, stepResult) {
+func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader, prompt, modelType string, parentMessageID *int, shouldStop bool) (streamOutcome, stepResult) {
 	start := time.Now()
 	r := stepResult{Name: "Completion (stream)"}
 	outcome := streamOutcome{}
@@ -269,6 +270,7 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 
 	state := streamState{currentType: "thinking"}
 	idCh := make(chan int, 1)
+	contentCh := make(chan struct{}, 1)
 	doneCh := make(chan struct{})
 
 	// 读流 goroutine
@@ -287,7 +289,7 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 			if len(line) > 0 {
 				state.mu.Lock()
 				state.rawSSE += line
-				observeLine(line, &state, idCh)
+				observeLine(line, &state, idCh, contentCh)
 				state.mu.Unlock()
 			}
 			if err != nil {
@@ -301,8 +303,8 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 		}
 	}()
 
-	// 等待捕获 response_message_id
-	if stopAfter > 0 {
+	// 等待捕获 response_message_id，再等待首批流式内容到达后停止
+	if shouldStop {
 		select {
 		case <-idCh:
 			// 拿到 ID
@@ -326,8 +328,22 @@ func doCompletionStreamWithStop(ctx context.Context, token, sessionID, powHeader
 			return outcome, r
 		}
 
-		fmt.Printf("  -> 已捕获 response_message_id=%d，等待 %s 后停止...\n", state.responseMessageID, stopAfter)
-		time.Sleep(stopAfter)
+		fmt.Printf("  -> 已捕获 response_message_id=%d，等待首批流式内容...\n", state.responseMessageID)
+		select {
+		case <-contentCh:
+			fmt.Printf("  -> 已收到首批流式内容，立即停止...\n")
+		case <-time.After(contentWaitTimeout):
+			fmt.Fprintf(os.Stderr, "  -> 等待首批内容超时(%s)，强制停止\n", contentWaitTimeout)
+		case <-doneCh:
+			r.Err = "流在收到首批流式内容前就结束了"
+			r.StatusCode = resp.StatusCode
+			r.Duration = time.Since(start)
+			outcome.state = &state
+			if state.err != nil {
+				r.Err = state.err.Error()
+			}
+			return outcome, r
+		}
 
 		// 调用 stop_stream
 		fmt.Printf("  -> 调用 stop_stream...\n")
@@ -402,7 +418,8 @@ func doStopStream(ctx context.Context, token, sessionID string, messageID int) s
 }
 
 // observeLine 解析一行 SSE，更新 state，并在首次拿到 response_message_id 时通知 idCh。
-func observeLine(line string, state *streamState, idCh chan<- int) {
+// 在首次拿到实际流式内容(思考或回复文本)时通知 contentCh（仅通知一次）。
+func observeLine(line string, state *streamState, idCh chan<- int, contentCh chan<- struct{}) {
 	// ParseDeepSeekContentLine 不暴露 status，这里单独提取一次。
 	if chunk, _, parsed := sse.ParseDeepSeekSSELine([]byte(line)); parsed && chunk != nil {
 		extractStatus(chunk, state)
@@ -433,6 +450,13 @@ func observeLine(line string, state *streamState, idCh chan<- int) {
 			state.thinking += p.Text
 		} else {
 			state.content += p.Text
+		}
+	}
+	if !state.hadContent && (state.content != "" || state.thinking != "") {
+		state.hadContent = true
+		select {
+		case contentCh <- struct{}{}:
+		default:
 		}
 	}
 }

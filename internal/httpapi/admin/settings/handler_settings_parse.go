@@ -182,13 +182,6 @@ func parseSettingsUpdateRequest(req map[string]any) (*config.AdminConfig, *confi
 			}
 			cfg.MaxChars = n
 		}
-		if v, exists := raw["stop_delay_ms"]; exists {
-			n := intFrom(v)
-			if err := config.ValidateIntRange("expert_prompt_segment.stop_delay_ms", n, 0, 60000, true); err != nil {
-				return nil, nil, nil, nil, nil, nil, nil, nil, nil, err
-			}
-			cfg.StopDelayMs = n
-		}
 		if err := config.ValidateExpertPromptSegmentConfig(*cfg); err != nil {
 			return nil, nil, nil, nil, nil, nil, nil, nil, nil, err
 		}
