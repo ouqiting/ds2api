@@ -2,6 +2,7 @@ package chat
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"ds2api/internal/auth"
 	"ds2api/internal/chathistory"
+	dsclient "ds2api/internal/deepseek/client"
 	"ds2api/internal/promptcompat"
 )
 
@@ -402,5 +404,95 @@ func TestChatCompletionsCurrentInputFilePersistsNeutralPrompt(t *testing.T) {
 	}
 	if !strings.Contains(full.Messages[0].Content, "Continue from the latest state in the attached DS2API_HISTORY.txt context.") {
 		t.Fatalf("expected continuation prompt to be persisted, got %#v", full.Messages[0])
+	}
+}
+
+type createSessionFailDSStub struct{}
+
+func (createSessionFailDSStub) CreateSession(_ context.Context, _ *auth.RequestAuth, _ int) (string, error) {
+	return "", errors.New("create session failed")
+}
+
+func (createSessionFailDSStub) GetPow(_ context.Context, _ *auth.RequestAuth, _ int) (string, error) {
+	return "pow", nil
+}
+
+func (createSessionFailDSStub) UploadFile(_ context.Context, _ *auth.RequestAuth, _ dsclient.UploadFileRequest, _ int) (*dsclient.UploadFileResult, error) {
+	return &dsclient.UploadFileResult{ID: "file-id", Filename: "file.txt", Bytes: 1, Status: "uploaded"}, nil
+}
+
+func (createSessionFailDSStub) CallCompletion(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string, _ int) (*http.Response, error) {
+	return nil, errors.New("unexpected CallCompletion")
+}
+
+func (createSessionFailDSStub) StopStream(_ context.Context, _ *auth.RequestAuth, _ string, _ int) error {
+	return nil
+}
+
+func (createSessionFailDSStub) FireCompletionAndStop(_ context.Context, _ *auth.RequestAuth, _ map[string]any, _ string) (int, error) {
+	return 0, nil
+}
+
+func (createSessionFailDSStub) DeleteSessionForToken(_ context.Context, _ string, _ string) (*dsclient.DeleteSessionResult, error) {
+	return &dsclient.DeleteSessionResult{Success: true}, nil
+}
+
+func (createSessionFailDSStub) DeleteAllSessionsForToken(_ context.Context, _ string) error {
+	return nil
+}
+
+func TestChatCompletionsDirectTokenErrorDiscardsHistory(t *testing.T) {
+	historyStore := newTestChatHistoryStore(t)
+	h := &Handler{
+		Store:       mockOpenAIConfig{},
+		Auth:        streamStatusAuthStub{},
+		DS:          createSessionFailDSStub{},
+		ChatHistory: historyStore,
+	}
+
+	reqBody := `{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"hi there"}],"stream":false}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(reqBody))
+	req.Header.Set("Authorization", "Bearer direct-token")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ChatCompletions(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d body=%s", rec.Code, rec.Body.String())
+	}
+	snapshot, err := historyStore.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot failed: %v", err)
+	}
+	if len(snapshot.Items) != 0 {
+		t.Fatalf("expected direct-token auth failure to leave no history, got %#v", snapshot.Items)
+	}
+}
+
+func TestChatCompletionsStreamDirectTokenErrorDiscardsHistory(t *testing.T) {
+	historyStore := newTestChatHistoryStore(t)
+	h := &Handler{
+		Store:       mockOpenAIConfig{},
+		Auth:        streamStatusAuthStub{},
+		DS:          createSessionFailDSStub{},
+		ChatHistory: historyStore,
+	}
+
+	reqBody := `{"model":"deepseek-v4-flash","messages":[{"role":"user","content":"hi there"}],"stream":true}`
+	req := httptest.NewRequest(http.MethodPost, "/v1/chat/completions", strings.NewReader(reqBody))
+	req.Header.Set("Authorization", "Bearer direct-token")
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	h.ChatCompletions(rec, req)
+
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401, got %d body=%s", rec.Code, rec.Body.String())
+	}
+	snapshot, err := historyStore.Snapshot()
+	if err != nil {
+		t.Fatalf("snapshot failed: %v", err)
+	}
+	if len(snapshot.Items) != 0 {
+		t.Fatalf("expected direct-token auth failure to leave no stream history, got %#v", snapshot.Items)
 	}
 }

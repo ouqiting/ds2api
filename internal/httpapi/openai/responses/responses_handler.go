@@ -115,7 +115,11 @@ func (h *Handler) Responses(w http.ResponseWriter, r *http.Request) {
 		})
 		if outErr != nil {
 			if historySession != nil {
-				historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+				if completionruntime.IsDirectTokenAuthError(outErr) {
+					historySession.Discard()
+				} else {
+					historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+				}
 			}
 			writeOpenAIErrorWithCode(w, outErr.Status, outErr.Message, outErr.Code)
 			return
@@ -136,7 +140,11 @@ func (h *Handler) Responses(w http.ResponseWriter, r *http.Request) {
 	})
 	if outErr != nil {
 		if historySession != nil {
-			historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.Discard()
+			} else {
+				historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			}
 		}
 		writeOpenAIErrorWithCode(w, outErr.Status, outErr.Message, outErr.Code)
 		return

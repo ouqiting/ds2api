@@ -110,7 +110,11 @@ func (h *Handler) handleClaudeDirect(w http.ResponseWriter, r *http.Request) boo
 	})
 	if outErr != nil {
 		if historySession != nil {
-			historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.Discard()
+			} else {
+				historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+			}
 		}
 		writeClaudeError(w, outErr.Status, outErr.Message)
 		return true
@@ -145,7 +149,11 @@ func (h *Handler) handleClaudeDirectStream(w http.ResponseWriter, r *http.Reques
 	})
 	if outErr != nil {
 		if historySession != nil {
-			historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.Discard()
+			} else {
+				historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			}
 		}
 		writeClaudeError(w, outErr.Status, outErr.Message)
 		return

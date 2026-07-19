@@ -3,6 +3,7 @@ services:
     image: ghcr.io/ouqiting/ds2api:latest
     container_name: ds2api
     restart: always
+    user: "0:0"
     env_file:
       - .env
     ports:

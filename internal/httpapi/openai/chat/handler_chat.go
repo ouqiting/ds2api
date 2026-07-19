@@ -94,7 +94,11 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 		sessionID = result.SessionID
 		if outErr != nil {
 			if historySession != nil {
-				historySession.error(outErr.Status, outErr.Message, outErr.Code, historyThinkingForArchive(result.Turn.RawThinking, result.Turn.DetectionThinking, result.Turn.Thinking), historyTextForArchive(result.Turn.RawText, result.Turn.Text))
+				if completionruntime.IsDirectTokenAuthError(outErr) {
+					historySession.discard()
+				} else {
+					historySession.error(outErr.Status, outErr.Message, outErr.Code, historyThinkingForArchive(result.Turn.RawThinking, result.Turn.DetectionThinking, result.Turn.Thinking), historyTextForArchive(result.Turn.RawText, result.Turn.Text))
+				}
 			}
 			writeOpenAIErrorWithCode(w, outErr.Status, outErr.Message, outErr.Code)
 			return
@@ -116,7 +120,11 @@ func (h *Handler) ChatCompletions(w http.ResponseWriter, r *http.Request) {
 	sessionID = start.SessionID
 	if outErr != nil {
 		if historySession != nil {
-			historySession.error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.discard()
+			} else {
+				historySession.error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			}
 		}
 		writeOpenAIErrorWithCode(w, outErr.Status, outErr.Message, outErr.Code)
 		return

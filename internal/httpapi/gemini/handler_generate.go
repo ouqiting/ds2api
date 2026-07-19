@@ -107,7 +107,11 @@ func (h *Handler) handleGeminiDirect(w http.ResponseWriter, r *http.Request, str
 	})
 	if outErr != nil {
 		if historySession != nil {
-			historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.Discard()
+			} else {
+				historySession.ErrorTurn(outErr.Status, outErr.Message, outErr.Code, result.Turn)
+			}
 		}
 		writeGeminiError(w, outErr.Status, outErr.Message)
 		return true
@@ -137,7 +141,11 @@ func (h *Handler) handleGeminiDirectStream(w http.ResponseWriter, r *http.Reques
 	})
 	if outErr != nil {
 		if historySession != nil {
-			historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			if completionruntime.IsDirectTokenAuthError(outErr) {
+				historySession.Discard()
+			} else {
+				historySession.Error(outErr.Status, outErr.Message, outErr.Code, "", "")
+			}
 		}
 		writeGeminiError(w, outErr.Status, outErr.Message)
 		return

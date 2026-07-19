@@ -239,6 +239,7 @@ cp config.example.json config.json
 
 ```bash
 # 1. 下载并解压
+mkdir ds2api && cd ds2api
 wget https://github.com/ouqiting/ds2api/releases/latest/download/docker-compose.tar.gz
 tar -xzf docker-compose.tar.gz
 
@@ -247,20 +248,21 @@ cp .env.example .env
 cp config.example.json config.json
 
 # 3. 编辑 .env（至少设置 DS2API_ADMIN_KEY；如需修改宿主机端口，可额外设置 DS2API_HOST_PORT）
+nano .env
 #    DS2API_ADMIN_KEY=请替换为强密码
 
 # 4. 启动
-docker-compose up -d
+docker compose up -d
 
 # 5. 查看日志
-docker-compose logs -f
+docker compose logs -f
 ```
 
 默认 `docker-compose.yml` 会把宿主机 `6011` 映射到容器内的 `5001`。如果你希望直接对外暴露 `5001`，请设置 `DS2API_HOST_PORT=5001`（或者手动调整 `ports` 配置）。
 同时默认把 `./config.json` 挂载到容器 `/data/config.json`，并设置 `DS2API_CONFIG_PATH=/data/config.json`，用于避免 `/app` 只读导致运行时 token 持久化失败。
 镜像会预创建 `/data` 并授权给非 root 的 `ds2api` 用户；如果使用单文件 bind mount，请确保宿主机 `config.json` 对容器用户可读写，例如 `chmod 644 config.json`。
 
-更新镜像：`docker-compose up -d --build`
+更新镜像：`docker compose pull`
 
 #### Zeabur 一键部署（Dockerfile）
 

@@ -187,6 +187,17 @@ func (s *chatHistorySession) stopped(thinking, content, finishReason string) {
 	})
 }
 
+func (s *chatHistorySession) discard() {
+	if s == nil || s.store == nil || s.disabled {
+		return
+	}
+	if err := s.store.Delete(s.entryID); err != nil {
+		if !isChatHistoryMissingError(err) && !errors.Is(err, chathistory.ErrDisabled) {
+			config.Logger.Warn("[chat_history] discard failed", "error", err)
+		}
+	}
+}
+
 func historyTextForArchive(raw, visible string) string {
 	if strings.TrimSpace(raw) != "" {
 		return raw

@@ -167,6 +167,17 @@ func (s *Session) Error(statusCode int, message, finishReason, thinking, content
 	})
 }
 
+func (s *Session) Discard() {
+	if s == nil || s.store == nil || s.disabled {
+		return
+	}
+	if err := s.store.Delete(s.entryID); err != nil {
+		if !isMissingError(err) && !errors.Is(err, chathistory.ErrDisabled) {
+			config.Logger.Warn("[response_history] discard failed", "surface", s.startParams.Surface, "error", err)
+		}
+	}
+}
+
 func (s *Session) SuccessTurn(statusCode int, turn assistantturn.Turn, usage map[string]any) {
 	outcome := assistantturn.FinalizeTurn(turn, assistantturn.FinalizeOptions{})
 	s.Success(
