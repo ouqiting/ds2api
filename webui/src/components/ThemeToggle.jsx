@@ -1,28 +1,32 @@
 import { Moon, Sun } from 'lucide-react'
 import { useEffect, useState } from 'react'
 
-import { applyTheme, getInitialTheme, LIGHT_THEME, THEME_STORAGE_KEY, toggleTheme } from '../theme'
 import { useI18n } from '../i18n'
+import { applyTheme, getInitialTheme, LIGHT_THEME, THEME_STORAGE_KEY, toggleTheme } from '../theme'
 
-export default function ThemeToggle({ className = '' }) {
+export default function ThemeToggle({ className = '', compact = false }) {
     const { t } = useI18n()
-    const [theme, setTheme] = useState(() => getInitialTheme(typeof localStorage === 'undefined' ? null : localStorage))
-    const isLight = theme === LIGHT_THEME
+    const [theme, setTheme] = useState(() => getInitialTheme(typeof window === 'undefined' ? undefined : window.localStorage))
 
     useEffect(() => {
         applyTheme(theme, document.documentElement)
-        localStorage.setItem(THEME_STORAGE_KEY, theme)
+        window.localStorage.setItem(THEME_STORAGE_KEY, theme)
     }, [theme])
+
+    const nextTheme = toggleTheme(theme)
+    const label = nextTheme === LIGHT_THEME ? t('theme.light') : t('theme.dark')
+    const title = nextTheme === LIGHT_THEME ? t('theme.switchToLight') : t('theme.switchToDark')
 
     return (
         <button
             type="button"
-            onClick={() => setTheme(toggleTheme(theme))}
-            className={`p-1.5 rounded-md border border-border bg-secondary/50 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors ${className}`}
-            title={isLight ? t('theme.switchToDark') : t('theme.switchToLight')}
-            aria-label={isLight ? t('theme.switchToDark') : t('theme.switchToLight')}
+            onClick={() => setTheme(nextTheme)}
+            className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card/80 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur transition-colors hover:border-primary/40 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-background ${compact ? 'h-8 w-8 px-0' : 'h-9 px-3'} ${className}`}
+            title={title}
+            aria-label={title}
         >
-            {isLight ? <Moon className="w-3.5 h-3.5" /> : <Sun className="w-3.5 h-3.5" />}
+            {nextTheme === LIGHT_THEME ? <Sun className="h-3.5 w-3.5" /> : <Moon className="h-3.5 w-3.5" />}
+            {!compact && <span className="hidden sm:inline">{label}</span>}
         </button>
     )
 }

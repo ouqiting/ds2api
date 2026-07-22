@@ -5,6 +5,8 @@
         "chinese": "中文"
     },
     "theme": {
+        "light": "Light mode",
+        "dark": "Dark mode",
         "switchToLight": "Switch to light mode",
         "switchToDark": "Switch to dark mode"
     },

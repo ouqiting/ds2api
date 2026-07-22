@@ -75,9 +75,9 @@ export default function AddKeyModal({ show, t, editingKey, newKey, setNewKey, lo
                                 role="switch"
                                 aria-checked={!!newKey.tools_enabled}
                                 onClick={() => setNewKey({ ...newKey, tools_enabled: !newKey.tools_enabled })}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${newKey.tools_enabled ? 'bg-primary' : 'bg-muted-foreground/30'}`}
+                                className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${newKey.tools_enabled ? 'border-primary bg-primary' : 'border-border bg-secondary'}`}
                             >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${newKey.tools_enabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                <span className={`inline-block h-4 w-4 transform rounded-full shadow-sm ring-1 transition-transform ${newKey.tools_enabled ? 'translate-x-6 bg-primary-foreground ring-black/10' : 'translate-x-1 bg-muted-foreground/70 ring-black/20'}`} />
                             </button>
                             <span className="text-sm font-medium">{t('accountManager.toolsEnabledLabel')}</span>
                         </label>
