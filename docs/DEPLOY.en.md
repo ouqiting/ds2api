@@ -307,6 +307,8 @@ VERCEL_TEAM_ID=team_xxxxxxxxxxxx   # optional for personal accounts
 | `DS2API_CHAT_HISTORY_PATH` | Chat history storage path (must be set to `/tmp/chat_history.json` on Vercel, otherwise unavailable due to read-only filesystem) | `data/chat_history.json` |
 | `DS2API_VERCEL_PROTECTION_BYPASS` | Deployment protection bypass for internal Node→Go calls | — |
 
+> **Auto-disable training data opt-in**: after each login or token refresh, managed accounts automatically call DeepSeek's `update_settings` endpoint to set `training_allowed` to `false` (i.e. opt out of "data used to improve the experience"). This behavior is always on, requires no configuration, and only logs a warning on failure without affecting login or business flows.
+
 ### 3.4 Vercel Architecture
 
 ```text

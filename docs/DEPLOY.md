@@ -317,6 +317,8 @@ VERCEL_TEAM_ID=team_xxxxxxxxxxxx   # 个人账号可留空
 
 详细说明参见 [API.md](../API.md#admin-接口) 中 `/admin/settings` 部分。
 
+> **自动关闭训练数据授权**：托管账号每次登录或刷新 token 后，会自动调用 DeepSeek `update_settings` 接口将 `training_allowed` 置为 `false`（即关闭“数据用于优化体验”）。该行为默认开启、无需配置，失败仅记录日志、不影响登录或业务流程。
+
 ### 3.4 Vercel 架构说明
 
 ```text

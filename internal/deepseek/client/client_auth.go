@@ -74,6 +74,9 @@ func (c *Client) Login(ctx context.Context, acc config.Account) (string, error) 
 	}
 	auth.WithAuth(ctx, loginAuth)
 	c.reportClientSettingsAfterLogin(ctx, loginAuth, ssoID)
+	if err := c.DisableTrainingAllowed(ctx, loginAuth); err != nil {
+		config.Logger.Warn("[disable_training] failed after login", "account", acc.Identifier(), "error", err)
+	}
 	return token, nil
 }
 
