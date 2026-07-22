@@ -386,24 +386,28 @@ func isPathInsideRoot(path, root string) bool {
 }
 
 func resolveStaticAdminDir(configured string) string {
-	if configured != "" {
+	// 显式配置优先：路径可能尚未存在（auto-build 会创建），无条件信任。
+	if strings.TrimSpace(os.Getenv("DS2API_STATIC_ADMIN_DIR")) != "" {
 		return configured
 	}
 	candidates := []string{
-		filepath.Join("static", "admin"),
+		configured,
 		filepath.Join("..", "static", "admin"),
 	}
-	exe, err := os.Executable()
-	if err == nil {
+	if exe, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exe)
 		candidates = append(candidates,
-			filepath.Join(filepath.Dir(exe), "static", "admin"),
-			filepath.Join(filepath.Dir(exe), "..", "static", "admin"),
+			filepath.Join(exeDir, "static", "admin"),
+			filepath.Join(exeDir, "..", "static", "admin"),
 		)
+	}
+	if config.IsVercel() {
+		candidates = append(candidates, "/var/task/static/admin")
 	}
 	for _, c := range candidates {
 		if fi, err := os.Stat(c); err == nil && fi.IsDir() {
 			return c
 		}
 	}
-	return filepath.Join("static", "admin")
+	return configured
 }
