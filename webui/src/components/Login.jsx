@@ -69,7 +69,7 @@ export default function Login({ onLogin, onMessage }) {
                                 </div>
                                 <input
                                     type="password"
-                                    className="w-full bg-[#09090b] border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/30 text-foreground"
+                                    className="w-full bg-background border border-border rounded-xl pl-10 pr-4 py-3 text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-muted-foreground/30 text-foreground"
                                     placeholder={t('login.adminKeyPlaceholder')}
                                     value={adminKey}
                                     onChange={e => setAdminKey(e.target.value)}

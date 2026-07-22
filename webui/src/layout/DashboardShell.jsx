@@ -17,6 +17,7 @@ import {
 import clsx from 'clsx'
 
 import LanguageToggle from '../components/LanguageToggle'
+import ThemeToggle from '../components/ThemeToggle'
 import { useI18n } from '../i18n'
 
 const AccountManagerContainer = lazy(() => import('../features/account/AccountManagerContainer'))
@@ -150,7 +151,10 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
                     </div>
                     <div className="flex items-center justify-between mt-2">
                         <p className="text-[10px] text-muted-foreground font-semibold tracking-[0.1em] uppercase opacity-60 px-1">{t('sidebar.onlineAdminConsole')}</p>
-                        <LanguageToggle />
+                        <div className="flex items-center gap-1.5">
+                            <ThemeToggle />
+                            <LanguageToggle />
+                        </div>
                     </div>
                 </div>
 
@@ -232,6 +236,7 @@ export default function DashboardShell({ token, onLogout, config, fetchConfig, s
                         <span className="font-semibold text-sm">DS2API</span>
                     </div>
                     <div className="flex items-center gap-2">
+                        <ThemeToggle />
                         <LanguageToggle />
                         <button
                             onClick={() => setSidebarOpen(true)}

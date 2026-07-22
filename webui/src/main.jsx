@@ -4,8 +4,11 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { I18nProvider } from './i18n'
 import './styles.css'
+import { applyTheme, getInitialTheme } from './theme'
 
 const basename = import.meta.env.MODE === 'production' ? '/admin' : '/'
+
+applyTheme(getInitialTheme(localStorage), document.documentElement)
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>

@@ -4,6 +4,10 @@
         "english": "English",
         "chinese": "中文"
     },
+    "theme": {
+        "switchToLight": "Switch to light mode",
+        "switchToDark": "Switch to dark mode"
+    },
     "nav": {
         "accounts": {
             "label": "Account Management",

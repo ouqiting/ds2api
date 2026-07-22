@@ -40,6 +40,28 @@
   --radius: 0.5rem;
 }
 
+:root[data-theme="light"] {
+  --color-background: hsl(0 0% 98%);
+  --color-foreground: hsl(240 10% 3.9%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(240 10% 3.9%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(240 10% 3.9%);
+  --color-primary: hsl(38 92% 42%);
+  --color-primary-foreground: hsl(0 0% 100%);
+  --color-secondary: hsl(240 4.8% 95.9%);
+  --color-secondary-foreground: hsl(240 5.9% 10%);
+  --color-muted: hsl(240 4.8% 95.9%);
+  --color-muted-foreground: hsl(240 3.8% 46.1%);
+  --color-accent: hsl(45 93% 94%);
+  --color-accent-foreground: hsl(38 92% 32%);
+  --color-destructive: hsl(0 72% 51%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-border: hsl(240 5.9% 90%);
+  --color-input: hsl(240 5.9% 90%);
+  --color-ring: hsl(38 92% 42%);
+}
+
 /* Base styles */
 * {
   border-color: var(--color-border);
@@ -92,7 +114,7 @@ body {
 
 .btn:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+  box-shadow: 0 0 0 2px var(--color-ring);
 }
 
 .btn:disabled {
@@ -107,7 +129,7 @@ body {
 }
 
 .btn-primary:hover {
-  background-color: rgba(248, 250, 252, 0.9);
+  filter: brightness(0.95);
 }
 
 .btn-primary:active {
@@ -147,8 +169,8 @@ body {
   width: 100%;
   border-radius: 0.5rem;
   border: 1px solid var(--color-input);
-  background-color: #09090b;
-  color: hsl(var(--color-foreground));
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   transition: all 0.15s;

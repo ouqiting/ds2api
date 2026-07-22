@@ -26,7 +26,7 @@ export default function AddKeyModal({ show, t, editingKey, newKey, setNewKey, lo
                         <div className="flex gap-2">
                             <input
                                 type="text"
-                                className={isEditing ? "input-field bg-muted/30 flex-1 cursor-not-allowed" : "input-field bg-[#09090b] flex-1"}
+                                className={isEditing ? "input-field bg-muted/30 flex-1 cursor-not-allowed" : "input-field bg-background flex-1"}
                                 placeholder={isEditing ? t('accountManager.keyReadonlyPlaceholder') : t('accountManager.newKeyPlaceholder')}
                                 value={displayKey}
                                 onChange={e => setNewKey({ ...newKey, key: e.target.value })}

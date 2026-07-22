@@ -1,6 +1,7 @@
 import React from 'react'
 import { useI18n } from '../i18n'
 import LanguageToggle from './LanguageToggle'
+import ThemeToggle from './ThemeToggle'
 
 const LandingPage = ({ onEnter }) => {
     const { t } = useI18n()
@@ -11,8 +12,8 @@ const LandingPage = ({ onEnter }) => {
             <style dangerouslySetInnerHTML={{
                 __html: `
                 .landing-container {
-                    background-color: #030712;
-                    color: #f9fafb;
+                    background-color: var(--color-background);
+                    color: var(--color-foreground);
                     font-family: 'Inter', sans-serif;
                 }
                 .bg-glow {
@@ -71,14 +72,14 @@ const LandingPage = ({ onEnter }) => {
                     transform: translateY(-3px) scale(1.02);
                 }
                 .glass-card {
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
+                    background: var(--color-card);
+                    border: 1px solid var(--color-border);
                     backdrop-filter: blur(10px);
                     transition: all 0.3s ease;
                 }
                 .glass-card:hover {
                     border-color: rgba(245, 158, 11, 0.3);
-                    background: rgba(255, 255, 255, 0.05);
+                    background: var(--color-accent);
                     transform: translateY(-5px);
                 }
             `}} />
@@ -87,14 +88,15 @@ const LandingPage = ({ onEnter }) => {
             <div className="blob" style={{ top: '10%', left: '15%' }} />
             <div className="blob" style={{ bottom: '10%', right: '15%', animationDelay: '-5s' }} />
 
-            <div className="absolute top-6 right-6 z-20">
+            <div className="absolute top-6 right-6 z-20 flex gap-2">
+                <ThemeToggle />
                 <LanguageToggle />
             </div>
 
             <div className="landing-content">
                 <header className="mb-12">
                     <h1 className="logo-text">DS2API</h1>
-                    <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
+                    <p className="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed">
                         DeepSeek to OpenAI & Claude Compatible API Interface
                     </p>
                 </header>
@@ -109,14 +111,14 @@ const LandingPage = ({ onEnter }) => {
                     <a
                         href="/v1/models"
                         target="_blank"
-                        className="glass-card text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
+                        className="glass-card text-foreground px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
                     >
                         <span>📡</span> {t('landing.apiStatus')}
                     </a>
                     <a
                         href="https://github.com/CJackHwang/ds2api"
                         target="_blank"
-                        className="glass-card text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
+                        className="glass-card text-foreground px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
                     >
                         <span>📦</span> GitHub
                     </a>
@@ -132,7 +134,7 @@ const LandingPage = ({ onEnter }) => {
                         <div key={idx} className="glass-card p-6 rounded-2xl">
                             <span className="text-2xl mb-4 block">{feature.icon}</span>
                             <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
+                            <p className="text-sm text-muted-foreground leading-relaxed">{feature.desc}</p>
                         </div>
                     ))}
                 </div>
