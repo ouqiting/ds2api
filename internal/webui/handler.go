@@ -22,7 +22,7 @@ const welcomeHTML = `<!DOCTYPE html>
   --bg:hsl(222,26%,9%); --fg:hsl(210,20%,96%);
   --card:hsl(222,24%,12%); --card-fg:hsl(210,20%,96%);
   --muted:hsl(222,15%,20%); --muted-fg:hsl(217,12%,62%);
-  --primary:hsl(174,72%,45%); --primary-fg:hsl(222,47%,8%);
+  --primary:hsl(45,93%,47%); --primary-fg:hsl(240,10%,3.9%);
   --border:hsl(222,14%,22%);
   --radius:.625rem;
 }
@@ -30,7 +30,7 @@ const welcomeHTML = `<!DOCTYPE html>
   --bg:hsl(210,25%,97%); --fg:hsl(222,30%,13%);
   --card:hsl(0,0%,100%); --card-fg:hsl(222,30%,13%);
   --muted:hsl(213,22%,93%); --muted-fg:hsl(220,10%,42%);
-  --primary:hsl(174,80%,32%); --primary-fg:hsl(0,0%,100%);
+  --primary:hsl(45,93%,50%); --primary-fg:hsl(240,10%,3.9%);
   --border:hsl(216,18%,88%);
 }
 *{box-sizing:border-box;border-color:var(--border)}
@@ -44,13 +44,13 @@ body{
 }
 .app-backdrop{
   background:
-    radial-gradient(60rem 30rem at 85% -10%, hsl(174,72%,45%/.10), transparent 60%),
+    radial-gradient(60rem 30rem at 85% -10%, hsl(45,93%,47%/.10), transparent 60%),
     radial-gradient(50rem 26rem at -10% 110%, hsl(222,40%,30%/.35), transparent 60%),
     var(--bg);
 }
 [data-theme="light"] .app-backdrop{
   background:
-    radial-gradient(60rem 30rem at 85% -10%, hsl(174,80%,32%/.08), transparent 60%),
+    radial-gradient(60rem 30rem at 85% -10%, hsl(45,93%,50%/.08), transparent 60%),
     radial-gradient(50rem 26rem at -10% 110%, hsl(213,60%,80%/.5), transparent 60%),
     var(--bg);
 }
@@ -116,6 +116,20 @@ h1 span{color:var(--primary)}
 footer{
   margin-top:4rem;font-size:.75rem;color:var(--muted-fg);opacity:.6;
 }
+@keyframes fadeInDown{from{opacity:0;transform:translateY(-16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeInDownFaded{from{opacity:0;transform:translateY(-16px)}to{opacity:.6;transform:translateY(0)}}
+.topbar{animation:fadeInDown .3s ease-out both;animation-delay:.05s}
+.badge{animation:fadeInDown .3s ease-out both;animation-delay:.075s}
+h1{animation:fadeInDown .3s ease-out both;animation-delay:.15s}
+.subtitle{animation:fadeInDown .3s ease-out both;animation-delay:.225s}
+.actions{animation:fadeInDown .3s ease-out both;animation-delay:.3s}
+.feature{animation:fadeInDown .3s ease-out backwards}
+.feature:nth-child(1){animation-delay:.375s}
+.feature:nth-child(2){animation-delay:.425s}
+.feature:nth-child(3){animation-delay:.475s}
+.feature:nth-child(4){animation-delay:.525s}
+footer{animation:fadeInDownFaded .3s ease-out both;animation-delay:.575s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body class="app-backdrop">
