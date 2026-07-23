@@ -1,5 +1,4 @@
 import { X } from 'lucide-react'
-import clsx from 'clsx'
 import { useState } from 'react'
 
 export default function ElasticPoolModal({
@@ -44,15 +43,9 @@ export default function ElasticPoolModal({
                             role="switch"
                             aria-checked={elasticPool.enabled}
                             onClick={() => setElasticPool({ ...elasticPool, enabled: !elasticPool.enabled })}
-                            className={clsx(
-                                "relative inline-flex h-5 w-9 items-center rounded-full transition-colors shrink-0",
-                                elasticPool.enabled ? "bg-primary" : "bg-muted-foreground/30"
-                            )}
+                            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 focus-visible:ring-offset-card ${elasticPool.enabled ? 'border-primary bg-primary' : 'border-border bg-muted'}`}
                         >
-                            <span className={clsx(
-                                "inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform shadow-sm",
-                                elasticPool.enabled ? "translate-x-[18px]" : "translate-x-1"
-                            )} />
+                            <span className={`inline-block h-4 w-4 transform rounded-full shadow-sm transition-transform ${elasticPool.enabled ? 'translate-x-6 bg-primary-foreground' : 'translate-x-1 bg-muted-foreground'}`} />
                         </button>
                     </div>
 

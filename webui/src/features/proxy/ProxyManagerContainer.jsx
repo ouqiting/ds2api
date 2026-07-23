@@ -268,7 +268,7 @@ function ProxyFormModal({
                             <label className="block text-sm font-medium mb-1.5">{t('proxyManager.passwordLabel')}</label>
                             <input
                                 type="password"
-                                className="input-field bg-[#09090b]"
+                                className="input-field bg-background"
                                 placeholder={t('proxyManager.passwordPlaceholder')}
                                 value={form.password}
                                 onChange={e => setForm({ ...form, password: e.target.value })}

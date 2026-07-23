@@ -4,6 +4,12 @@
         "english": "English",
         "chinese": "中文"
     },
+    "theme": {
+        "light": "亮色模式",
+        "dark": "暗色模式",
+        "switchToLight": "切换到亮色模式",
+        "switchToDark": "切换到暗色模式"
+    },
     "nav": {
         "accounts": {
             "label": "账号管理",
