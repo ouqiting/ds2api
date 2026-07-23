@@ -150,7 +150,7 @@ export default function BatchImport({ onRefresh, onMessage, authFetch }) {
 
                 <div className="flex-1 relative min-h-[400px]">
                     <textarea
-                        className="absolute inset-0 w-full h-full p-4 font-mono text-sm bg-[#09090b] text-foreground resize-none focus:outline-none custom-scrollbar"
+                        className="absolute inset-0 w-full h-full p-4 font-mono text-sm bg-background text-foreground resize-none focus:outline-none custom-scrollbar"
                         value={jsonInput}
                         onChange={e => setJsonInput(e.target.value)}
                         placeholder={'{\n  "keys": ["your-api-key"],\n  "accounts": [\n    {"email": "...", "password": "...", "token": ""}\n  ]\n}'}

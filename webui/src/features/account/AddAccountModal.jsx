@@ -67,7 +67,7 @@ export default function AddAccountModal({
                         <label className="block text-sm font-medium mb-1.5">{t('accountManager.passwordLabel')} <span className="text-destructive">*</span></label>
                         <input
                             type="password"
-                            className="input-field bg-[#09090b]"
+                            className="input-field bg-background"
                             placeholder={t('accountManager.passwordPlaceholder')}
                             value={newAccount.password}
                             onChange={e => setNewAccount({ ...newAccount, password: e.target.value })}

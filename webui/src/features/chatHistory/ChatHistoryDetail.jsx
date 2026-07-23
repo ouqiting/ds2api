@@ -128,12 +128,9 @@ function MergedPromptView({ item, t, onMessage }) {
     const merged = item?.final_prompt || ''
 
     return (
-        <div
-            className="max-w-4xl mx-auto rounded-2xl border px-5 py-4"
-            style={{ backgroundColor: 'rgb(231, 176, 8)', borderColor: 'rgba(231, 176, 8, 0.45)' }}
-        >
+        <div className="max-w-4xl mx-auto rounded-2xl border border-primary/20 bg-primary px-5 py-4">
             <div className="mb-3 flex items-center justify-between gap-3">
-                <div className="text-[11px] uppercase tracking-[0.12em] text-[#5b4300]">
+                <div className="text-[11px] uppercase tracking-[0.12em] text-primary-foreground">
                     {t('chatHistory.mergedInput')}
                 </div>
                 <PromptTextActions
@@ -143,15 +140,15 @@ function MergedPromptView({ item, t, onMessage }) {
                     downloadTitle={t('chatHistory.downloadMerged')}
                     t={t}
                     onMessage={onMessage}
-                    buttonClassName="h-8 w-8 rounded-lg text-[#5b4300] hover:text-black hover:bg-[#fff8db]/45 flex items-center justify-center transition-colors"
+                    buttonClassName="h-8 w-8 rounded-lg text-primary-foreground hover:text-primary-foreground/80 hover:bg-primary-foreground/15 flex items-center justify-center transition-colors"
                 />
             </div>
-            <div className="text-sm leading-7 text-[#2f2200] whitespace-pre-wrap break-words font-mono">
+            <div className="text-sm leading-7 text-primary-foreground whitespace-pre-wrap break-words font-mono">
                 <ExpandableText
                     text={merged || t('chatHistory.emptyMergedPrompt')}
                     expandLabel={t('chatHistory.expand')}
                     collapseLabel={t('chatHistory.collapse')}
-                    buttonClassName="text-[#2f2200] hover:text-black"
+                    buttonClassName="text-primary-foreground hover:text-primary-foreground/80"
                 />
             </div>
         </div>

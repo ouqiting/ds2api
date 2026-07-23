@@ -4,6 +4,12 @@
         "english": "English",
         "chinese": "中文"
     },
+    "theme": {
+        "light": "Light mode",
+        "dark": "Dark mode",
+        "switchToLight": "Switch to light mode",
+        "switchToDark": "Switch to dark mode"
+    },
     "nav": {
         "accounts": {
             "label": "Account Management",
@@ -77,6 +83,8 @@
     "landing": {
         "adminConsole": "Admin Console",
         "apiStatus": "API Status",
+        "badge": "DeepSeek → OpenAI & Claude compatible gateway",
+        "footer": "© 2026 DS2API Project · Designed for flexibility & performance",
         "features": {
             "compatibility": {
                 "title": "Full Compatibility",
@@ -187,7 +195,7 @@
         "remarkOptional": "Remark (optional)",
         "remarkPlaceholder": "e.g. Team shared / test only",
         "toolsEnabledLabel": "Enable tool calls",
-        "toolsEnabledHint": "Whether to inject tool instructions. Not recommended, risk of account ban.",
+        "toolsEnabledHint": "Whether to inject tool instructions.",
         "toolsEnabledOn": "Tool calls: enabled",
         "toolsEnabledOff": "Tool calls: disabled",
         "emailOptional": "Email (optional)",
@@ -440,7 +448,7 @@
         "currentInputFileDesc": "Disabled by default. Once the character threshold is reached, upload the full context as a DS2API_HISTORY.txt context file.",
         "currentInputFileMinChars": "Current input threshold (characters)",
         "currentInputFileHelp": "Default is 0, which uses independent split for any non-empty input.",
-        "currentInputFileWarning": "Expert mode does not support file uploads; not recommended to enable",
+        "currentInputFileWarning": "Expert mode does not support file uploads; only effective in quick mode",
         "expertPromptSegmentTitle": "Expert Prompt Segmentation",
         "expertPromptSegmentDesc": "Only applies to expert models. When the prompt exceeds the character threshold, it is automatically split at role boundaries and sent in segments: earlier segments are sent and then stopped, the final segment returns normally.",
         "expertPromptSegmentEnabled": "Enable prompt segmentation",

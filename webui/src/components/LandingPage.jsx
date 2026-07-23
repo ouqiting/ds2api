@@ -1,148 +1,91 @@
-import React from 'react'
+import { ArrowRight, Boxes, Github, LayoutDashboard, Radio, Scale, ScanSearch, Sparkles, Workflow } from 'lucide-react'
+
 import { useI18n } from '../i18n'
 import LanguageToggle from './LanguageToggle'
+import ThemeToggle from './ThemeToggle'
 
-const LandingPage = ({ onEnter }) => {
+const FEATURES = [
+    { icon: Boxes, key: 'compatibility' },
+    { icon: Scale, key: 'loadBalancing' },
+    { icon: Workflow, key: 'reasoning' },
+    { icon: ScanSearch, key: 'search' },
+]
+
+export default function LandingPage({ onEnter }) {
     const { t } = useI18n()
+
     return (
-        <div className="landing-container min-h-screen relative overflow-hidden flex flex-col items-center justify-center p-6 text-center">
-            {/* Animated Background Elements - using Tailwind with some custom CSS in styles.css if needed, 
-                but for simplicity I will use inline styles to match the backend version precisely */}
-            <style dangerouslySetInnerHTML={{
-                __html: `
-                .landing-container {
-                    background-color: #030712;
-                    color: #f9fafb;
-                    font-family: 'Inter', sans-serif;
-                }
-                .bg-glow {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    width: 100%;
-                    height: 100%;
-                    z-index: 0;
-                    background: 
-                        radial-gradient(circle at 20% 30%, rgba(245, 158, 11, 0.05) 0%, transparent 40%),
-                        radial-gradient(circle at 80% 70%, rgba(239, 68, 68, 0.05) 0%, transparent 40%);
-                }
-                .blob {
-                    position: absolute;
-                    width: 400px;
-                    height: 400px;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    filter: blur(80px);
-                    opacity: 0.15;
-                    border-radius: 50%;
-                    z-index: 0;
-                    animation: move 20s infinite alternate;
-                }
-                @keyframes move {
-                    from { transform: translate(-10%, -10%) scale(1); }
-                    to { transform: translate(10%, 10%) scale(1.1); }
-                }
-                .landing-content {
-                    position: relative;
-                    z-index: 10;
-                    max-width: 900px;
-                    animation: fadeInUp 0.8s ease-out;
-                }
-                @keyframes fadeInUp {
-                    from { opacity: 0; transform: translateY(20px); }
-                    to { opacity: 1; transform: translateY(0); }
-                }
-                .logo-text {
-                    font-family: 'Orbitron', sans-serif;
-                    font-size: clamp(3rem, 10vw, 5rem);
-                    font-weight: 700;
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    background-clip: text;
-                    letter-spacing: -2px;
-                    margin-bottom: 0.5rem;
-                }
-                .btn-premium {
-                    background: linear-gradient(135deg, #f59e0b, #ef4444);
-                    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
-                }
-                .btn-premium:hover {
-                    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.6);
-                    transform: translateY(-3px) scale(1.02);
-                }
-                .glass-card {
-                    background: rgba(255, 255, 255, 0.03);
-                    border: 1px solid rgba(255, 255, 255, 0.08);
-                    backdrop-filter: blur(10px);
-                    transition: all 0.3s ease;
-                }
-                .glass-card:hover {
-                    border-color: rgba(245, 158, 11, 0.3);
-                    background: rgba(255, 255, 255, 0.05);
-                    transform: translateY(-5px);
-                }
-            `}} />
-
-            <div className="bg-glow" />
-            <div className="blob" style={{ top: '10%', left: '15%' }} />
-            <div className="blob" style={{ bottom: '10%', right: '15%', animationDelay: '-5s' }} />
-
-            <div className="absolute top-6 right-6 z-20">
+        <div className="app-backdrop relative min-h-screen overflow-hidden text-foreground">
+            <div className="absolute top-5 right-5 z-20 flex items-center gap-2">
+                <ThemeToggle />
                 <LanguageToggle />
             </div>
 
-            <div className="landing-content">
-                <header className="mb-12">
-                    <h1 className="logo-text">DS2API</h1>
-                    <p className="text-gray-400 text-xl max-w-2xl mx-auto leading-relaxed">
-                        DeepSeek to OpenAI & Claude Compatible API Interface
-                    </p>
-                </header>
+            <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-20 text-center">
+                <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+                    <Sparkles className="h-3.5 w-3.5 text-primary" />
+                    {t('landing.badge')}
+                </div>
 
-                <div className="flex flex-wrap gap-4 justify-center mb-16">
+                <h1 className="mt-6 text-5xl sm:text-6xl font-bold tracking-tight">
+                    DS2<span className="text-primary">API</span>
+                </h1>
+                <p className="mt-4 max-w-xl text-base sm:text-lg text-muted-foreground leading-relaxed">
+                    {t('landing.features.compatibility.desc')}
+                </p>
+
+                <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
                     <button
                         onClick={onEnter}
-                        className="btn-premium text-white px-8 py-3 rounded-xl font-bold transition-all flex items-center gap-2"
+                        className="btn btn-primary h-11 px-6 text-sm shadow-lg shadow-primary/25"
                     >
-                        <span>🎛️</span> {t('landing.adminConsole')}
+                        <LayoutDashboard className="h-4 w-4" />
+                        {t('landing.adminConsole')}
+                        <ArrowRight className="h-4 w-4" />
                     </button>
                     <a
                         href="/v1/models"
                         target="_blank"
-                        className="glass-card text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
+                        rel="noreferrer"
+                        className="btn btn-secondary h-11 px-6 text-sm"
                     >
-                        <span>📡</span> {t('landing.apiStatus')}
+                        <Radio className="h-4 w-4" />
+                        {t('landing.apiStatus')}
                     </a>
                     <a
                         href="https://github.com/CJackHwang/ds2api"
                         target="_blank"
-                        className="glass-card text-white px-8 py-3 rounded-xl font-semibold transition-all flex items-center gap-2"
+                        rel="noreferrer"
+                        className="btn btn-secondary h-11 px-6 text-sm"
                     >
-                        <span>📦</span> GitHub
+                        <Github className="h-4 w-4" />
+                        GitHub
                     </a>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-left">
-                    {[
-                        { icon: '🚀', title: t('landing.features.compatibility.title'), desc: t('landing.features.compatibility.desc') },
-                        { icon: '⚖️', title: t('landing.features.loadBalancing.title'), desc: t('landing.features.loadBalancing.desc') },
-                        { icon: '🧠', title: t('landing.features.reasoning.title'), desc: t('landing.features.reasoning.desc') },
-                        { icon: '🔍', title: t('landing.features.search.title'), desc: t('landing.features.search.desc') },
-                    ].map((feature, idx) => (
-                        <div key={idx} className="glass-card p-6 rounded-2xl">
-                            <span className="text-2xl mb-4 block">{feature.icon}</span>
-                            <h3 className="text-lg font-bold mb-2">{feature.title}</h3>
-                            <p className="text-sm text-gray-400 leading-relaxed">{feature.desc}</p>
+                <div className="mt-16 grid w-full grid-cols-1 gap-4 text-left sm:grid-cols-2 lg:grid-cols-4">
+                    {FEATURES.map(({ icon: Icon, key }) => (
+                        <div
+                            key={key}
+                            className="group rounded-xl border border-border bg-card/70 p-5 backdrop-blur transition-all duration-200 hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
+                        >
+                            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                                <Icon className="h-4.5 w-4.5" />
+                            </div>
+                            <h3 className="mt-4 text-sm font-semibold">
+                                {t(`landing.features.${key}.title`)}
+                            </h3>
+                            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+                                {t(`landing.features.${key}.desc`)}
+                            </p>
                         </div>
                     ))}
                 </div>
 
-                <footer className="mt-20 opacity-40 text-sm">
-                    <p>&copy; 2026 DS2API Project. Designed for flexibility & performance.</p>
+                <footer className="mt-16 text-xs text-muted-foreground/60">
+                    <p>{t('landing.footer')}</p>
                 </footer>
             </div>
         </div>
     )
 }
-
-export default LandingPage
