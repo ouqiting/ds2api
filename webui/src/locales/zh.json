@@ -83,6 +83,8 @@
     "landing": {
         "adminConsole": "管理面板",
         "apiStatus": "API 状态",
+        "badge": "DeepSeek → OpenAI & Claude 兼容网关",
+        "footer": "© 2026 DS2API Project · 为灵活性与性能而设计",
         "features": {
             "compatibility": {
                 "title": "全面兼容",

@@ -83,6 +83,8 @@
     "landing": {
         "adminConsole": "Admin Console",
         "apiStatus": "API Status",
+        "badge": "DeepSeek → OpenAI & Claude compatible gateway",
+        "footer": "© 2026 DS2API Project · Designed for flexibility & performance",
         "features": {
             "compatibility": {
                 "title": "Full Compatibility",

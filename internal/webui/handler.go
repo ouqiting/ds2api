@@ -11,12 +11,28 @@ import (
 	"ds2api/internal/config"
 )
 
+// welcomeHTML 是 "/" 落地页的 Go fallback（webui 未构建或直接访问根路径时展示）。
+// 其内联 i18n 字典（key: badge/subtitle/admin/apiStatus/f1t~f4t/f1d~f4d/footer/
+// themeLabel/langLabel）与 webui/src/locales/{zh,en}.json 的 landing.* 键对应——
+// React 落地页（webui/src/components/LandingPage.jsx）使用同一落地页的 webui 版本。
+// 维护时请同步更新两边，避免两边文案漂移。
 const welcomeHTML = `<!DOCTYPE html>
 <html lang="zh-CN" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DS2API</title>
+<script>
+(function(){
+  try {
+    var root = document.documentElement;
+    var t = localStorage.getItem('ds2api_theme');
+    if (t === 'light' || t === 'dark') root.dataset.theme = t;
+    var l = localStorage.getItem('ds2api_lang');
+    if (l === 'zh' || l === 'en') root.lang = l === 'zh' ? 'zh-CN' : 'en';
+  } catch(e){}
+})();
+</script>
 <style>
 :root{
   --bg:hsl(222,26%,9%); --fg:hsl(210,20%,96%);

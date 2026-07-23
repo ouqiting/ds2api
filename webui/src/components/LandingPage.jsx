@@ -24,7 +24,7 @@ export default function LandingPage({ onEnter }) {
             <div className="relative z-10 mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-20 text-center">
                 <div className="inline-flex items-center gap-2 rounded-full border border-border bg-card/70 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
                     <Sparkles className="h-3.5 w-3.5 text-primary" />
-                    DeepSeek → OpenAI & Claude compatible gateway
+                    {t('landing.badge')}
                 </div>
 
                 <h1 className="mt-6 text-5xl sm:text-6xl font-bold tracking-tight">
@@ -83,7 +83,7 @@ export default function LandingPage({ onEnter }) {
                 </div>
 
                 <footer className="mt-16 text-xs text-muted-foreground/60">
-                    <p>&copy; 2026 DS2API Project · Designed for flexibility &amp; performance.</p>
+                    <p>{t('landing.footer')}</p>
                 </footer>
             </div>
         </div>
